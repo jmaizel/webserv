@@ -12,6 +12,7 @@
 # include <map>
 # include <string>
 # include <stdexcept>
+#include <cstdlib>
 
 # define MAX_CLIENTS 1024
 # define BUFFER_SIZE 4096
