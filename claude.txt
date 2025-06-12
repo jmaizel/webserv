@@ -228,26 +228,8 @@ std::string Server::ft_execute_cgi(const std::string& script_path)
 	}
 	pclose(pipe);
 	
-	// Séparer headers et body du script
-	size_t body_start = result.find("\r\n\r\n");
-	if (body_start == std::string::npos)
-		return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 17\r\n\r\nMalformed script";
-	
-	std::string script_headers = result.substr(0, body_start + 2); // Garde \r\n
-	std::string body = result.substr(body_start + 4); // Skip \r\n\r\n
-	
-	// Calculer Content-Length du body
-	std::ostringstream oss;
-	oss << body.length();
-	
-	// Construire la réponse complète
-	std::string response = "HTTP/1.1 200 OK\r\n";
-	response += script_headers; // Headers du script (Content-Type, etc.)
-	response += "Content-Length: " + oss.str() + "\r\n";
-	response += "\r\n";
-	response += body;
-	
-	return response;
+	// Le script produit déjà les headers HTTP, on ajoute juste le status
+	return "HTTP/1.1 200 OK\r\n" + result;
 }
 
 std::string Server::ft_handle_request_simple(const std::string& uri)
@@ -260,20 +242,50 @@ std::string Server::ft_handle_request_simple(const std::string& uri)
 	}
 	
 	// Sinon, réponse basique
-	std::string body = "<html><body>";
-	body += "<h1>WebServ fonctionne!</h1>";
-	body += "<p><a href='/cgi-bin/time.py'>Voir l'heure (script Python)</a></p>";
-	body += "</body></html>";
-	
-	// Convertir la taille en string (compatible C++98)
-	std::ostringstream oss;
-	oss << body.length();
-	
 	std::string response = "HTTP/1.1 200 OK\r\n";
 	response += "Content-Type: text/html\r\n";
-	response += "Content-Length: " + oss.str() + "\r\n";
+	response += "Content-Length: 150\r\n";
 	response += "\r\n";
-	response += body;
+	response += "<html><body>";
+	response += "<h1>WebServ fonctionne!</h1>";
+	response += "<p><a href='/cgi-bin/time.py'>Voir l'heure (script Python)</a></p>";
+	response += "</body></html>";
 	
 	return response;
+}#include "../includes/Server.hpp"
+
+int main(int argc, char **argv)
+{
+	try
+	{
+		int port = 8080;
+		std::string host = "127.0.0.1";
+		
+		// Permettre de changer le port en argument
+		if (argc > 1)
+			port = std::atoi(argv[1]);
+		if (argc > 2)
+			host = argv[2];
+
+		std::cout << "Starting WebServ..." << std::endl;
+		
+		// Créer le serveur
+		Server server(port, host);
+		
+		// Étapes d'initialisation
+		server.ft_init_server();
+		server.ft_start_listening();
+		
+		std::cout << "Server ready! Try: http://localhost:" << port << std::endl;
+		
+		// Boucle principale (bloque ici)
+		server.ft_handle_connections();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Error: " << e.what() << std::endl;
+		return (1);
+	}
+
+	return (0);
 }

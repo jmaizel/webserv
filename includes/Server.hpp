@@ -12,40 +12,43 @@
 # include <map>
 # include <string>
 # include <stdexcept>
-#include <cstdlib>
+# include <sstream>
+# include <cstdio>
 
 # define MAX_CLIENTS 1024
 # define BUFFER_SIZE 4096
 
-
 class Server
 {
-    private:
-        int _server_fd; // socket du serveur
-        struct sockaddr_in _address; // adress du serveur
-        fd_set _read_fds; // set pour select() (lecture)
-        fd_set _write_fds; // set pour select() (ecriture)
-        fd_set _master_fds; // set maitre (tous les fd)
-        int _max_fd; // plus grand fd (pour select)
-        std::vector<int>	_client_fds;  // liste des clients connectes
-        int _port; // port d ecoute
-        std::string _host; // IP d ecoute
+	private:
+		int					_server_fd;
+		struct sockaddr_in	_address;
+		fd_set				_read_fds;
+		fd_set				_write_fds;
+		fd_set				_master_fds;
+		int					_max_fd;
+		std::vector<int>	_client_fds;
+		int					_port;
+		std::string			_host;
 
-    public:
+	public:
+		// Classe canonique
+		Server(void);
+		Server(int port, const std::string& host);
+		Server(const Server& other);
+		~Server(void);
+		Server& operator=(const Server& other);
 
-    // classe canonique
-    Server();
-    Server(int port, const std::string& host);
-    Server(const Server& other);
-    ~Server();
-
-    Server& operator=(const Server& other);
-
-    // methodes
-    void ft_init_server(void);
-    void ft_start_listening(void);
-    void ft_handle_connections(void);
-    void ft_accept_new_client(void);
-    void ft_handle_client_request(int client_fd);
+		// Methodes principales
+		void	ft_init_server(void);
+		void	ft_start_listening(void);
+		void	ft_handle_connections(void);
+		void	ft_accept_new_client(void);
+		void	ft_handle_client_request(int client_fd);
+		
+		// Methodes CGI temporaires
+		std::string	ft_execute_cgi(const std::string& script_path);
+		std::string	ft_handle_request_simple(const std::string& uri);
 };
+
 #endif

@@ -1,4 +1,6 @@
-#include "../includes/Server.hpp"
+#include "Server.hpp"
+#include <iostream>
+#include <cstdlib>  // Pour atoi()
 
 int main(int argc, char **argv)
 {
@@ -9,7 +11,7 @@ int main(int argc, char **argv)
 		
 		// Permettre de changer le port en argument
 		if (argc > 1)
-			port = std::atoi(argv[1]);
+			port = atoi(argv[1]);  // Pas std::atoi en C++98
 		if (argc > 2)
 			host = argv[2];
 
