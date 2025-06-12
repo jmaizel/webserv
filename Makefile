@@ -21,7 +21,7 @@ OBJDIR		= objs
 # Source files
 MAIN_SRCS	= $(SRCDIR)/main/main.cpp
 SERVER_SRCS	= $(SRCDIR)/server/Server.cpp
-PARSING_SRCS= # Vide pour l'instant, à remplir plus tard
+PARSING_SRCS= $(SRCDIR)/parsing/Parser.cpp
 
 # All source files
 SRCS		= $(MAIN_SRCS) $(SERVER_SRCS) $(PARSING_SRCS)

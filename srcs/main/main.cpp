@@ -1,39 +1,64 @@
 #include "Server.hpp"
 #include <iostream>
-#include <cstdlib>  // Pour atoi()
+#include <cstdlib>
+#include "../../includes/ServerConfig.hpp"
 
-int main(int argc, char **argv)
-{
-	try
-	{
-		int port = 8080;
-		std::string host = "127.0.0.1";
-		
-		// Permettre de changer le port en argument
-		if (argc > 1)
-			port = atoi(argv[1]);  // Pas std::atoi en C++98
-		if (argc > 2)
-			host = argv[2];
+int main(int ac, char** av) {
+    // Vérifier les arguments
+    if (ac != 2) {
+        std::cerr << "Usage: " << av[0] << " <config_file>" << std::endl;
+        return (1);
+    }
 
-		std::cout << "Starting WebServ..." << std::endl;
-		
-		// Créer le serveur
-		Server server(port, host);
-		
-		// Étapes d'initialisation
-		server.ft_init_server();
-		server.ft_start_listening();
-		
-		std::cout << "Server ready! Try: http://localhost:" << port << std::endl;
-		
-		// Boucle principale (bloque ici)
-		server.ft_handle_connections();
-	}
-	catch (const std::exception& e)
-	{
-		std::cerr << "Error: " << e.what() << std::endl;
-		return (1);
-	}
+    try {
+        ServerConfig config = parseConfigFile(av[1]);
 
-	return (0);
+        std::cout << "Server configuration:" << std::endl;
+        std::cout << "  Port: " << config.listen << std::endl;
+        std::cout << "  Server name: " << config.server_name << std::endl;
+        std::cout << "  Root: " << config.root << std::endl;
+        std::cout << "  Index: " << config.index << std::endl;
+        std::cout << "  Allowed methods: ";
+        for (size_t i = 0; i < config.allowed_methods.size(); i++) {
+            std::cout << config.allowed_methods[i] << " ";
+        }
+        std::cout << std::endl;
+
+        std::cout << std::endl << "Locations:" << std::endl;
+        for (size_t i = 0; i < config.locations.size(); i++) {
+            const LocationConfig& loc = config.locations[i];
+            std::cout << "  Location " << i << ":" << std::endl;
+            std::cout << "    Path: " << loc.path << std::endl;
+            std::cout << "    Root: " << loc.root << std::endl;
+            std::cout << "    Index: " << loc.index << std::endl;
+            std::cout << "    Allowed methods: ";
+            for (size_t j = 0; j < loc.allowed_methods.size(); j++) {
+                // FIX: Utiliser loc.allowed_methods[j] au lieu de config.allowed_methods[i]
+                std::cout << loc.allowed_methods[j] << " ";
+            }
+            std::cout << std::endl;
+            std::cout << "    Client max body size: " << loc.client_max_body_size << std::endl;
+            std::cout << std::endl;
+        }
+
+        std::cout << "Starting WebServ..." << std::endl;
+        
+        // Créer le serveur
+        Server server(config.listen, config.server_name);
+        
+        // Étapes d'initialisation
+        server.ft_init_server();
+        server.ft_start_listening();
+        
+        std::cout << "Server ready! Try: http://localhost:" << config.listen << std::endl;
+        
+        // Boucle principale (bloque ici)
+        server.ft_handle_connections();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return (1);
+    }
+
+    return (0);
 }

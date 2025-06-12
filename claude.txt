@@ -228,8 +228,26 @@ std::string Server::ft_execute_cgi(const std::string& script_path)
 	}
 	pclose(pipe);
 	
-	// Le script produit déjà les headers HTTP, on ajoute juste le status
-	return "HTTP/1.1 200 OK\r\n" + result;
+	// Séparer headers et body du script
+	size_t body_start = result.find("\r\n\r\n");
+	if (body_start == std::string::npos)
+		return "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 17\r\n\r\nMalformed script";
+	
+	std::string script_headers = result.substr(0, body_start + 2); // Garde \r\n
+	std::string body = result.substr(body_start + 4); // Skip \r\n\r\n
+	
+	// Calculer Content-Length du body
+	std::ostringstream oss;
+	oss << body.length();
+	
+	// Construire la réponse complète
+	std::string response = "HTTP/1.1 200 OK\r\n";
+	response += script_headers; // Headers du script (Content-Type, etc.)
+	response += "Content-Length: " + oss.str() + "\r\n";
+	response += "\r\n";
+	response += body;
+	
+	return response;
 }
 
 std::string Server::ft_handle_request_simple(const std::string& uri)
@@ -242,41 +260,70 @@ std::string Server::ft_handle_request_simple(const std::string& uri)
 	}
 	
 	// Sinon, réponse basique
+	std::string body = "<html><body>";
+	body += "<h1>WebServ fonctionne!</h1>";
+	body += "<p><a href='/cgi-bin/time.py'>Voir l'heure (script Python)</a></p>";
+	body += "</body></html>";
+	
+	// Convertir la taille en string (compatible C++98)
+	std::ostringstream oss;
+	oss << body.length();
+	
 	std::string response = "HTTP/1.1 200 OK\r\n";
 	response += "Content-Type: text/html\r\n";
-	response += "Content-Length: 150\r\n";
+	response += "Content-Length: " + oss.str() + "\r\n";
 	response += "\r\n";
-	response += "<html><body>";
-	response += "<h1>WebServ fonctionne!</h1>";
-	response += "<p><a href='/cgi-bin/time.py'>Voir l'heure (script Python)</a></p>";
-	response += "</body></html>";
+	response += body;
 	
 	return response;
-}#include "../includes/Server.hpp"
+}#include "Server.hpp"
+#include <iostream>
+#include <cstdlib>  // Pour atoi()
+#include "../../includes/ServerConfig.hpp"
 
-int main(int argc, char **argv)
-{
+int main(int ac, char** av) {
+	(void)ac;
+    ServerConfig config = parseConfigFile(av[1]);
+
+    std::cout << "Server configuration:" << std::endl;
+    std::cout << "  Port: " << config.listen << std::endl;
+    std::cout << "  Server name: " << config.server_name << std::endl;
+    std::cout << "  Root: " << config.root << std::endl;
+    std::cout << "  Index: " << config.index << std::endl;
+    std::cout << "  Allowed methods: ";
+    for (size_t i = 0; i < config.allowed_methods.size(); i++) {
+        std::cout << config.allowed_methods[i] << " ";
+    }
+    std::cout << std::endl;
+
+    std::cout << std::endl << "Locations:" << std::endl;
+    for (size_t i = 0; i < config.locations.size(); i++) {
+        const LocationConfig& loc = config.locations[i];
+        std::cout << "  Location " << i << ":" << std::endl;
+        std::cout << "    Path: " << loc.path << std::endl;
+        std::cout << "    Root: " << loc.root << std::endl;
+        std::cout << "    Index: " << loc.index << std::endl;
+        std::cout << "    Allowed methods: ";
+        for (size_t j = 0; j < loc.allowed_methods.size(); j++) {
+            std::cout << config.allowed_methods[i] << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "    Client max body size: " << loc.client_max_body_size << std::endl;
+        std::cout << std::endl;
+    }
 	try
 	{
-		int port = 8080;
-		std::string host = "127.0.0.1";
-		
-		// Permettre de changer le port en argument
-		if (argc > 1)
-			port = std::atoi(argv[1]);
-		if (argc > 2)
-			host = argv[2];
 
 		std::cout << "Starting WebServ..." << std::endl;
 		
 		// Créer le serveur
-		Server server(port, host);
+		Server server(config.listen, config.server_name);
 		
 		// Étapes d'initialisation
 		server.ft_init_server();
 		server.ft_start_listening();
 		
-		std::cout << "Server ready! Try: http://localhost:" << port << std::endl;
+		std::cout << "Server ready! Try: http://localhost:" << config.listen << std::endl;
 		
 		// Boucle principale (bloque ici)
 		server.ft_handle_connections();
@@ -288,4 +335,178 @@ int main(int argc, char **argv)
 	}
 
 	return (0);
+}/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Parser.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/06/12 11:36:48 by mwattier          #+#    #+#             */
+/*   Updated: 2025/06/12 14:17:33 by jmaizel          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "../../includes/ServerConfig.hpp"
+
+void parseDirective(const std::string& line, ServerConfig& config) {
+    std::istringstream iss(line);
+    std::string key, value;
+    iss >> key;
+    if (key == "listen") {
+        iss >> config.listen;
+    } else if (key == "server_name") {
+        iss >> config.server_name;
+    } else if (key == "root") {
+        iss >> config.root;
+    } else if (key == "index") {
+        iss >> config.index;
+    } else if (key == "allowed_methods") {
+        std::string method;
+        while (iss >> method) {
+            config.allowed_methods.push_back(method);
+        }
+    }
+    // Ajoute d'autres directives selon tes besoins
 }
+
+void parseLocation(std::ifstream& file, ServerConfig& config) {
+    LocationConfig loc;
+    std::string line, key, value;
+    // Lire la première ligne pour le path
+    std::getline(file, line);
+    std::istringstream iss(line);
+    iss >> key >> loc.path;
+    // Lire les directives du bloc location
+    while (std::getline(file, line)) {
+        if (line.find("}") != std::string::npos) break; // Fin du bloc
+        std::istringstream iss(line);
+        iss >> key;
+        if (key == "root") {
+            iss >> loc.root;
+        } else if (key == "index") {
+            iss >> loc.index;
+        } else if (key == "allowed_methods") {
+            std::string method;
+            while (iss >> method) {
+                loc.allowed_methods.push_back(method);
+            }
+        } else if (key == "client_max_body_size") {
+            iss >> loc.client_max_body_size;
+        }
+    }
+    config.locations.push_back(loc);
+}
+
+ServerConfig parseConfigFile(const std::string& filename) {
+    std::ifstream file(filename);
+    ServerConfig config;
+    std::string line;
+
+    while (std::getline(file, line)) {
+        // Supprimer les espaces en début de ligne
+        line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](int ch) { return !std::isspace(ch); }));
+        if (line.empty() || line[0] == '#') continue; // Ignore les commentaires et lignes vides
+
+        if (line.find("server {") != std::string::npos) {
+            // On est dans le bloc server, on continue
+        } else if (line.find("location") != std::string::npos) {
+            parseLocation(file, config);
+        } else if (line.find("}") != std::string::npos) {
+            // Fin du bloc, on continue
+        } else {
+            parseDirective(line, config);
+        }
+    }
+    return config;
+}/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/06/12 11:35:25 by mwattier          #+#    #+#             */
+/*   Updated: 2025/06/12 14:17:02 by jmaizel          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include <string>
+#include <vector>
+#include <map>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+
+struct LocationConfig {
+    std::string path;
+    std::string root;
+    std::string index;
+    std::vector<std::string> allowed_methods;
+    int client_max_body_size;
+};
+
+struct ServerConfig {
+    int listen;
+    std::string server_name;
+    std::string root;
+    std::string index;
+    std::vector<std::string> allowed_methods;
+    std::vector<LocationConfig> locations;
+    std::map<int, std::string> error_pages;
+};
+
+ServerConfig parseConfigFile(const std::string& filename);#ifndef SERVER_HPP
+# define SERVER_HPP
+
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <sys/select.h>
+# include <unistd.h>
+# include <fcntl.h>
+# include <iostream>
+# include <vector>
+# include <map>
+# include <string>
+# include <stdexcept>
+# include <sstream>
+# include <cstdio>
+
+# define MAX_CLIENTS 1024
+# define BUFFER_SIZE 4096
+
+class Server
+{
+	private:
+		int					_server_fd;
+		struct sockaddr_in	_address;
+		fd_set				_read_fds;
+		fd_set				_write_fds;
+		fd_set				_master_fds;
+		int					_max_fd;
+		std::vector<int>	_client_fds;
+		int					_port;
+		std::string			_host;
+
+	public:
+		// Classe canonique
+		Server(void);
+		Server(int port, const std::string& host);
+		Server(const Server& other);
+		~Server(void);
+		Server& operator=(const Server& other);
+
+		// Methodes principales
+		void	ft_init_server(void);
+		void	ft_start_listening(void);
+		void	ft_handle_connections(void);
+		void	ft_accept_new_client(void);
+		void	ft_handle_client_request(int client_fd);
+		
+		// Methodes CGI temporaires
+		std::string	ft_execute_cgi(const std::string& script_path);
+		std::string	ft_handle_request_simple(const std::string& uri);
+};
+
+#endif

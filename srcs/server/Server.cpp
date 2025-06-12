@@ -77,7 +77,13 @@ void Server::ft_init_server(void)
 	// 4. Configurer l'adresse du serveur
 	_address.sin_family = AF_INET;
 	_address.sin_port = htons(_port);
-	_address.sin_addr.s_addr = inet_addr(_host.c_str());
+	//_address.sin_addr.s_addr = inet_addr(_host.c_str());
+
+	 if (_host == "localhost") {
+        _address.sin_addr.s_addr = INADDR_ANY;  // 0.0.0.0 (toutes les interfaces)
+    } else {
+        _address.sin_addr.s_addr = inet_addr(_host.c_str());
+    }
 
 	// 5. Attacher le socket à l'adresse (bind)
 	if (bind(_server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
