@@ -1,0 +1,61 @@
+definition socket : 
+
+les sockets sont la base de la communication reseau. c est comme une prise ou un point de connexion pour communiquer sur le reseau.
+on l utilise comme points de passage pour faire passer des donnees.
+
+--> annalogie simple, un socket c est comme une boite au letre, on peut envoyer des lettres ou en recevoir.
+
+dans notre cas a nous on va utiliser des socket TCP qui vont connecter le client et le serveur. voici les avamtages :
+
+- connexion fiable : si tu envoie "ABC" ca arrive "ABC"
+- ordre garante : les donnees arrivent dans l ordre
+- detection d erreurs : si ca se perd on le sait
+- comme un appel telephonique : connexion etable, conversation , raccrochage 
+
+
+SERVEUR                           CLIENT
+┌─────────────┐                  ┌─────────────┐
+│ Socket      │                  │ Socket      │
+│ (écoute)    │                  │             │
+│ 127.0.0.1   │ ←── connect ──── │ random_port │
+│ :8080       │                  │             │
+└─────────────┘                  └─────────────┘
+       │
+       │ accept() crée un nouveau socket
+       ▼
+┌─────────────┐
+│ Socket      │ ←── recv/send ──→ Client
+│ (client)    │
+│ fd = 5      │
+└─────────────┘
+
+
+Alice                    Bob
+┌─────┐                ┌─────┐
+│     │ ←── LIGNE ───→ │     │
+└─────┘    (socket)    └─────┘
+  ↑                      ↑
+"Salut Bob!"         "Salut Alice!"
+(les données)        (les données)
+
+
+==> ligne pour creer le socket :
+
+ _server_fd = socket(AF_INET, SOCK_STREAM, 0);
+ AF_INET = IPV4
+ SOCK_STREAM = TCP (connexion fiable)
+
+
+
+
+
+
+
+ce qu il va se passe , a la creation de l objet server , on vide completement les fd_set mais on a aucun socket , les fd_set sont prets mais vides. et quand
+on lance le serveur : 
+server.ft_init_server();      // ICI on crée le socket
+server.ft_start_listening();  // ICI on ajoute le socket aux fd_set
+
+
+on doit initialise les fd_set dans le constructer car les fd_set contiennent des bits aleatoires en memoire au debut , donc si on ne les initialise pas a 0 on 
+peut avoir des problemes.
