@@ -14,6 +14,7 @@
 # include <stdexcept>
 # include <sstream>
 # include <cstdio>
+# include <fstream>  // AJOUTER CETTE LIGNE pour std::ifstream
 
 # define MAX_CLIENTS 1024
 # define BUFFER_SIZE 4096
@@ -49,6 +50,16 @@ class Server
 		// Methodes CGI temporaires
 		std::string	ft_execute_cgi(const std::string& script_path);
 		std::string	ft_handle_request_simple(const std::string& uri);
+		
+		// Méthode pour lire un fichier (étape par étape)
+		std::string	ft_read_file_simple(const std::string& file_path);
+		
+		// Methodes GET pour fichiers statiques
+		std::string	ft_serve_static_file(const std::string& uri);
+		std::string	ft_read_file(const std::string& file_path);
+		std::string	ft_get_content_type(const std::string& file_path);
+		std::string	ft_build_404_response(void);
+		std::string	ft_build_403_response(void);
 };
 
 #endif

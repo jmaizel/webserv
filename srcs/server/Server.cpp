@@ -258,28 +258,79 @@ std::string Server::ft_execute_cgi(const std::string& script_path)
 
 std::string Server::ft_handle_request_simple(const std::string& uri)
 {
-	// Si l'URI finit par .py, c'est un script
+	// 1. Si c'est un script Python → CGI (garde ça)
 	if (uri.length() > 3 && uri.substr(uri.length() - 3) == ".py")
 	{
 		std::string script_path = "./www" + uri;
 		return ft_execute_cgi(script_path);
 	}
 	
-	// Sinon, réponse basique
-	std::string body = "<html><body>";
-	body += "<h1>WebServ fonctionne!</h1>";
-	body += "<p><a href='/cgi-bin/time.py'>Voir l'heure (script Python)</a></p>";
-	body += "</body></html>";
+	// 2. NOUVEAU : Lire vraiment le fichier
+	std::cout << "Trying to serve file for URI: " << uri << std::endl;
 	
-	// Convertir la taille en string (compatible C++98)
+	// Construire le chemin du fichier
+	std::string file_path = "./www";
+	if (uri == "/") {
+		file_path += "/index.html";  // Page par défaut
+	} else {
+		file_path += uri;
+	}
+	
+	// Lire le fichier
+	std::string file_content = ft_read_file_simple(file_path);
+	
+	if (file_content.empty()) {
+		// Fichier introuvable → Erreur 404
+		std::string body = "<html><body>";
+		body += "<h1>404 Not Found</h1>";
+		body += "<p>Le fichier " + uri + " n'existe pas.</p>";
+		body += "<p><a href='/'>Retour à l'accueil</a></p>";
+		body += "</body></html>";
+		
+		std::ostringstream oss;
+		oss << body.length();
+		
+		std::string response = "HTTP/1.1 404 Not Found\r\n";
+		response += "Content-Type: text/html\r\n";
+		response += "Content-Length: " + oss.str() + "\r\n";
+		response += "\r\n";
+		response += body;
+		
+		return response;
+	}
+	
+	// Fichier trouvé → Renvoyer le contenu
 	std::ostringstream oss;
-	oss << body.length();
+	oss << file_content.length();
 	
 	std::string response = "HTTP/1.1 200 OK\r\n";
-	response += "Content-Type: text/html\r\n";
+	response += "Content-Type: text/html\r\n";  // Pour l'instant tout en HTML
 	response += "Content-Length: " + oss.str() + "\r\n";
 	response += "\r\n";
-	response += body;
+	response += file_content;
 	
 	return response;
+}
+
+std::string Server::ft_read_file_simple(const std::string& file_path)
+{
+	std::cout << "Attempting to read file: " << file_path << std::endl;
+	
+	std::ifstream file(file_path.c_str());
+	if (!file.is_open()) {
+		std::cout << "Error: Cannot open file " << file_path << std::endl;
+		return "";  // Fichier introuvable
+	}
+	
+	// Lire tout le fichier
+	std::string content;
+	std::string line;
+	
+	while (std::getline(file, line)) {
+		content += line + "\n";
+	}
+	
+	file.close();
+	std::cout << "Successfully read " << content.length() << " bytes from " << file_path << std::endl;
+	return content;
 }
