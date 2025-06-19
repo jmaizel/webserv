@@ -6,7 +6,7 @@
 /*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/12 11:35:25 by mwattier          #+#    #+#             */
-/*   Updated: 2025/06/12 14:38:32 by jmaizel          ###   ########.fr       */
+/*   Updated: 2025/06/19 14:07:42 by jmaizel          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+# include <cstdlib>
 
 struct LocationConfig {
     std::string path;

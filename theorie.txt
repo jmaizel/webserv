@@ -59,3 +59,38 @@ server.ft_start_listening();  // ICI on ajoute le socket aux fd_set
 
 on doit initialise les fd_set dans le constructer car les fd_set contiennent des bits aleatoires en memoire au debut , donc si on ne les initialise pas a 0 on 
 peut avoir des problemes.
+
+
+
+explication des methodes : 
+
+LA METHODE GET : 
+
+get est la methode HTTP la plus simple, elle dit "donne moi la ressource qui se trouve a cette adresse". GET est donc un protoal HTTP pour demander une ressource.
+
+- exemple d une requete GET :
+
+GET /about.html HTTP/1.1
+Host: localhost:8080
+User-Agent: Mozilla/5.0...
+Accept: text/html,application/xhtml+xml...
+Connection: keep-alive
+
+[corps vide - GET n'a jamais de body]
+
+- exemple d une reponse GET :
+
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 226
+Date: Thu, 12 Jun 2025 14:30:00 GMT
+
+<!DOCTYPE html>
+<html>
+<head>...
+[contenu du fichier]
+
+--> les 3 technologies fondamentales que le navigateur web peut interpreter nativement : du hTML ( role structure et contenu de la page)
+du CSS (Apparence et mise en page), JAVASCRIPT (interactivite et logique)
+
+Dans webServ, on fait une requete script, Webserv execute python et c est python qui genere/formate le HTML

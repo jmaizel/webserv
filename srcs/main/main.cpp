@@ -1,7 +1,7 @@
 #include "Server.hpp"
 #include <iostream>
 #include <cstdlib>
-#include "../../includes/ServerConfig.hpp"
+#include "ServerConfig.hpp"
 
 int main(int ac, char** av) {
     // Vérifier les arguments
@@ -11,6 +11,7 @@ int main(int ac, char** av) {
     }
 
     try {
+        // Parser la configuration
         ServerConfig config = parseConfigFile(av[1]);
 
         std::cout << "Server configuration:" << std::endl;
@@ -33,7 +34,6 @@ int main(int ac, char** av) {
             std::cout << "    Index: " << loc.index << std::endl;
             std::cout << "    Allowed methods: ";
             for (size_t j = 0; j < loc.allowed_methods.size(); j++) {
-                // FIX: Utiliser loc.allowed_methods[j] au lieu de config.allowed_methods[i]
                 std::cout << loc.allowed_methods[j] << " ";
             }
             std::cout << std::endl;
@@ -43,16 +43,16 @@ int main(int ac, char** av) {
 
         std::cout << "Starting WebServ..." << std::endl;
         
-        // Créer le serveur
+        // Créer le serveur avec la config
         Server server(config.listen, config.server_name);
         
-        // Étapes d'initialisation
+        // Initialiser et démarrer
         server.ft_init_server();
         server.ft_start_listening();
         
         std::cout << "Server ready! Try: http://localhost:" << config.listen << std::endl;
         
-        // Boucle principale (bloque ici)
+        // Boucle principale (parsing HTTP intégré)
         server.ft_handle_connections();
     }
     catch (const std::exception& e) {
