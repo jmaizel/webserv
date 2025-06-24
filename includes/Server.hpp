@@ -16,6 +16,8 @@
 # include <cstdio>
 # include <fstream>
 # include <cstdlib>
+# include "ServerConfig.hpp"  // AJOUT pour utiliser la config
+
 # define MAX_CLIENTS 1024
 # define BUFFER_SIZE 4096
 
@@ -29,13 +31,12 @@ class Server
 		fd_set				_master_fds;
 		int					_max_fd;
 		std::vector<int>	_client_fds;
-		int					_port;
-		std::string			_host;
+		ServerConfig		_config;  // NOUVEAU : Stocker la configuration
 
 	public:
 		// Classe canonique
 		Server(void);
-		Server(int port, const std::string& host);
+		Server(const ServerConfig& config);  // NOUVEAU : Constructeur avec config
 		Server(const Server& other);
 		~Server(void);
 		Server& operator=(const Server& other);
@@ -51,17 +52,24 @@ class Server
 		void			ft_disconnect_client(int client_fd);
 		
 		// Methodes HTTP (ServerHttp.cpp)
-		std::string		ft_handle_request_simple(const std::string& uri);
+		std::string		ft_handle_request_simple(const std::string& uri);  // Ancienne méthode
+		std::string		ft_handle_request_with_config(const std::string& method, const std::string& uri);  // NOUVEAU
 		std::string		ft_execute_cgi(const std::string& script_path);
 		std::string		ft_build_404_response(void);
 		std::string		ft_build_403_response(void);
-		std::string		ft_build_400_response(void);  // NOUVEAU
-		std::string		ft_build_405_response(void);  // NOUVEAU
+		std::string		ft_build_400_response(void);
+		std::string		ft_build_405_response(void);
 		
 		// Methodes fichiers (ServerFiles.cpp)
 		std::string		ft_read_file_simple(const std::string& file_path);
 		std::string		ft_get_content_type(const std::string& file_path);
-		std::string		ft_serve_static_file(const std::string& uri);
+		std::string		ft_serve_static_file(const std::string& uri);  // Ancienne méthode
+		std::string		ft_serve_static_file_with_config(const std::string& uri);  // NOUVEAU
+		
+		// Methodes configuration (ServerConfigMethods.cpp) - NOUVEAU
+		const LocationConfig*	ft_find_location(const std::string& uri);
+		bool					ft_is_method_allowed(const std::string& method, const LocationConfig* location);
+		std::string				ft_get_file_path(const std::string& uri, const LocationConfig* location);
 };
 
 #endif

@@ -6,7 +6,7 @@
 #    By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/06/19 00:00:00 by jmaizel           #+#    #+#              #
-#    Updated: 2025/06/19 14:06:48 by jmaizel          ###   ########.fr        #
+#    Updated: 2025/06/24 11:38:14 by jmaizel          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -28,7 +28,8 @@ MAIN_SRCS = main/main.cpp
 SERVER_SRCS = server/Server.cpp \
               server/ServerNetwork.cpp \
               server/ServerHttp.cpp \
-              server/ServerFiles.cpp
+              server/ServerFiles.cpp \
+              server/ServerConfigMethods.cpp
 
 CONFIG_SRCS = parsing/Parser.cpp
 

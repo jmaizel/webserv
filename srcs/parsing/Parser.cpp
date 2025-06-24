@@ -6,7 +6,7 @@
 /*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/12 11:36:48 by mwattier          #+#    #+#             */
-/*   Updated: 2025/06/12 14:40:27 by jmaizel          ###   ########.fr       */
+/*   Updated: 2025/06/24 13:32:29 by jmaizel          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,8 +129,7 @@ ServerConfig parseConfigFile(const std::string& filename) {
         } else {
             parseDirective(line, config);
         }
-    }
-    
+    } 
     file.close();
     return config;
 }

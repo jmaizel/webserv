@@ -1,6 +1,97 @@
 #include "Server.hpp"
 #include <sstream>
 
+// NOUVELLE MÉTHODE : Traiter la requête avec la configuration
+std::string Server::ft_handle_request_with_config(const std::string& method, const std::string& uri)
+{
+	std::cout << "Processing " << method << " request for: " << uri << " with config" << std::endl;
+	
+	// 1. Trouver la location correspondante
+	const LocationConfig* location = ft_find_location(uri);
+	if (location)
+		std::cout << "Matched location: " << location->path << " (root: " << location->root << ")" << std::endl;
+	else
+		std::cout << "No specific location, using server defaults" << std::endl;
+	
+	// 2. Vérifier si la méthode est autorisée
+	if (!ft_is_method_allowed(method, location))
+	{
+		std::cout << "Method " << method << " not allowed for this location" << std::endl;
+		return ft_build_405_response();
+	}
+	
+	// 3. Router selon la méthode
+	if (method == "GET")
+	{
+		return ft_serve_static_file_with_config(uri);
+	}
+	else if (method == "POST")
+	{
+		// TODO: Implémenter POST avec config
+		std::cout << "POST method (not implemented yet)" << std::endl;
+		return ft_build_405_response();
+	}
+	else if (method == "DELETE")
+	{
+		// TODO: Implémenter DELETE avec config
+		std::cout << "DELETE method (not implemented yet)" << std::endl;
+		return ft_build_405_response();
+	}
+	else
+	{
+		return ft_build_405_response();
+	}
+}
+
+// NOUVELLE MÉTHODE : Servir fichier statique avec la config
+std::string Server::ft_serve_static_file_with_config(const std::string& uri)
+{
+	std::cout << "Serving static file for URI: " << uri << " with config" << std::endl;
+	
+	// 1. Trouver la location correspondante
+	const LocationConfig* location = ft_find_location(uri);
+	
+	// 2. Construire le chemin du fichier selon la config
+	std::string file_path = ft_get_file_path(uri, location);
+	
+	std::cout << "File path resolved to: " << file_path << std::endl;
+	
+	// 3. Vérifier si c'est un script CGI
+	if (file_path.length() > 3 && file_path.substr(file_path.length() - 3) == ".py")
+	{
+		std::cout << "Executing CGI script: " << file_path << std::endl;
+		return ft_execute_cgi(file_path);
+	}
+	
+	// 4. Lire le contenu du fichier
+	std::string file_content = ft_read_file_simple(file_path);
+	
+	// 5. Vérifier si le fichier existe
+	if (file_content.empty())
+	{
+		std::cout << "File not found: " << file_path << std::endl;
+		return ft_build_404_response();
+	}
+	
+	// 6. Déterminer le Content-Type selon l'extension
+	std::string content_type = ft_get_content_type(file_path);
+	
+	// 7. Calculer Content-Length
+	std::ostringstream oss;
+	oss << file_content.length();
+	
+	// 8. Construire la réponse HTTP 200 OK
+	std::string response = "HTTP/1.1 200 OK\r\n";
+	response += "Content-Type: " + content_type + "\r\n";
+	response += "Content-Length: " + oss.str() + "\r\n";
+	response += "Server: WebServ/1.0\r\n";
+	response += "Connection: close\r\n";
+	response += "\r\n";
+	response += file_content;
+	
+	return response;
+}
+
 std::string Server::ft_handle_request_simple(const std::string& uri)
 {
 	// 1. Décision : script CGI ou fichier statique ?
@@ -97,6 +188,8 @@ std::string Server::ft_build_403_response(void)
 	
 	return response;
 }
+
+// NOUVELLES MÉTHODES pour les erreurs de parsing HTTP
 
 std::string Server::ft_build_400_response(void)
 {

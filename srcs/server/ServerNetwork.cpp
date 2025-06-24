@@ -2,7 +2,7 @@
 #include "HttpRequest.hpp"
 #include <sstream>
 
-// Fonctions de parsing HTTP externes (définies dans srcs/http/)
+// Fonctions de parsing HTTP externes
 HttpRequest ft_parse_http_request(const std::string& raw_data);
 bool ft_is_request_complete(const std::string& data);
 
@@ -61,8 +61,6 @@ void Server::ft_handle_client_request(int client_fd)
 	// 4. Vérifier si la requête est complète
 	if (!ft_is_request_complete(raw_data))
 	{
-		// Requête incomplète, attendre plus de données
-		// Note: Dans une version complète, il faudrait stocker les données partielles
 		std::cout << "Incomplete request, waiting for more data..." << std::endl;
 		return;
 	}
@@ -89,46 +87,13 @@ void Server::ft_handle_client_request(int client_fd)
 	std::cout << "  Version: " << request.version << std::endl;
 	std::cout << "  Headers: " << request.headers.size() << " header(s)" << std::endl;
 	
-	// Afficher quelques headers importants
-	std::map<std::string, std::string>::iterator it;
-	it = request.headers.find("host");
-	if (it != request.headers.end())
-		std::cout << "    Host: " << it->second << std::endl;
-	it = request.headers.find("user-agent");
-	if (it != request.headers.end())
-		std::cout << "    User-Agent: " << it->second << std::endl;
-	
-	if (!request.body.empty())
-		std::cout << "  Body: " << request.body.length() << " bytes" << std::endl;
-	
-	// 8. Traiter la requête selon la méthode
-	std::string response;
-	if (request.method == "GET")
-	{
-		// Utiliser ton handler existant pour GET
-		response = ft_handle_request_simple(request.uri);
-	}
-	else if (request.method == "POST")
-	{
-		// TODO: Implémenter POST avec le body
-		std::cout << "POST request received with body: " << request.body << std::endl;
-		response = ft_build_405_response();
-	}
-	else if (request.method == "DELETE")
-	{
-		// TODO: Implémenter DELETE
-		std::cout << "DELETE request received for: " << request.uri << std::endl;
-		response = ft_build_405_response();
-	}
-	else
-	{
-		response = ft_build_405_response();
-	}
+	// 8. NOUVEAU : Utiliser la configuration pour traiter la requête
+	std::string response = ft_handle_request_with_config(request.method, request.uri);
 	
 	// 9. Envoyer la réponse au client
 	send(client_fd, response.c_str(), response.length(), 0);
 	
-	// 10. Fermer la connexion (HTTP/1.1 sans keep-alive pour simplifier)
+	// 10. Fermer la connexion
 	ft_disconnect_client(client_fd);
 }
 

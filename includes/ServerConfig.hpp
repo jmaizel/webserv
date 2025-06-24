@@ -6,9 +6,12 @@
 /*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/12 11:35:25 by mwattier          #+#    #+#             */
-/*   Updated: 2025/06/19 14:07:42 by jmaizel          ###   ########.fr       */
+/*   Updated: 2025/06/24 11:39:41 by jmaizel          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+#ifndef SERVER_CONFIG_HPP
+# define SERVER_CONFIG_HPP
 
 #include <string>
 #include <vector>
@@ -16,7 +19,7 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-# include <cstdlib>
+#include <cstdlib>
 
 struct LocationConfig {
     std::string path;
@@ -37,3 +40,5 @@ struct ServerConfig {
 };
 
 ServerConfig parseConfigFile(const std::string& filename);
+
+#endif

@@ -43,8 +43,8 @@ int main(int ac, char** av) {
 
         std::cout << "Starting WebServ..." << std::endl;
         
-        // Créer le serveur avec la config
-        Server server(config.listen, config.server_name);
+        // Créer le serveur AVEC la config
+        Server server(config);
         
         // Initialiser et démarrer
         server.ft_init_server();

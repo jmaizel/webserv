@@ -1,16 +1,22 @@
 #include "Server.hpp"
 
 // Constructeur par défaut
-Server::Server(void) : _server_fd(-1), _max_fd(0), _port(8080), _host("127.0.0.1")
+Server::Server(void) : _server_fd(-1), _max_fd(0)
 {
+	// Configuration par défaut
+	_config.listen = 8080;
+	_config.server_name = "localhost";
+	_config.root = "./www";
+	_config.index = "index.html";
+	
 	// Initialiser tous les fd_set à vide
 	FD_ZERO(&_master_fds);
 	FD_ZERO(&_read_fds);
 	FD_ZERO(&_write_fds);
 }
 
-// Constructeur avec paramètres
-Server::Server(int port, const std::string& host) : _server_fd(-1), _max_fd(0), _port(port), _host(host)
+// Constructeur avec configuration
+Server::Server(const ServerConfig& config) : _server_fd(-1), _max_fd(0), _config(config)
 {
 	FD_ZERO(&_master_fds);
 	FD_ZERO(&_read_fds);
@@ -48,8 +54,7 @@ Server& Server::operator=(const Server& other)
 		_address = other._address;
 		_max_fd = other._max_fd;
 		_client_fds = other._client_fds;
-		_port = other._port;
-		_host = other._host;
+		_config = other._config;  // Copier la config
 		_master_fds = other._master_fds;
 		_read_fds = other._read_fds;
 		_write_fds = other._write_fds;
@@ -61,31 +66,27 @@ void Server::ft_init_server(void)
 {
 	// 1. Créer le socket
 	_server_fd = socket(AF_INET, SOCK_STREAM, 0);
-	// AF_INET = IPv4, SOCK_STREAM = TCP (connexion fiable)
 	if (_server_fd == -1)
 		throw std::runtime_error("Socket creation failed");
 	
-	// 2. Option SO_REUSEADDR (très important !)
+	// 2. Option SO_REUSEADDR
 	int opt = 1;
 	if (setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
 		throw std::runtime_error("Setsockopt failed");
-		// SO_REUSEADDR permet d'arrêter le serveur et de le relancer directement
-		// sinon ça indique que l'adresse est déjà utilisée
 	
 	// 3. Rendre le socket non-bloquant
 	if (fcntl(_server_fd, F_SETFL, O_NONBLOCK) < 0)
 		throw std::runtime_error("Fcntl failed");
-		// Rendre le socket non-bloquant permet d'utiliser select()
 
-	// 4. Configurer l'adresse du serveur
+	// 4. Configurer l'adresse du serveur AVEC LA CONFIG
 	_address.sin_family = AF_INET;
-	_address.sin_port = htons(_port);
+	_address.sin_port = htons(_config.listen);  // Utilise _config.listen
 	
 	// Gérer "localhost" correctement
-	if (_host == "localhost") {
-		_address.sin_addr.s_addr = INADDR_ANY;  // 0.0.0.0 (toutes les interfaces)
+	if (_config.server_name == "localhost") {
+		_address.sin_addr.s_addr = INADDR_ANY;
 	} else {
-		_address.sin_addr.s_addr = inet_addr(_host.c_str());
+		_address.sin_addr.s_addr = inet_addr(_config.server_name.c_str());
 	}
 
 	// 5. Attacher le socket à l'adresse (bind)
@@ -103,7 +104,7 @@ void Server::ft_start_listening(void)
 	FD_SET(_server_fd, &_master_fds);
 	_max_fd = _server_fd;
 
-	std::cout << "Server listening on " << _host << ":" << _port << std::endl;
+	std::cout << "Server listening on " << _config.server_name << ":" << _config.listen << std::endl;
 }
 
 void Server::ft_handle_connections(void)

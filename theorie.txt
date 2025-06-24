@@ -94,3 +94,205 @@ Date: Thu, 12 Jun 2025 14:30:00 GMT
 du CSS (Apparence et mise en page), JAVASCRIPT (interactivite et logique)
 
 Dans webServ, on fait une requete script, Webserv execute python et c est python qui genere/formate le HTML
+
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            🚀 DÉMARRAGE DU SERVEUR                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1️⃣ main.cpp lance le serveur
+   ├── Vérifie les arguments (config.conf)
+   ├── parseConfigFile() → Parse le fichier de configuration
+   │   ├── Lit server { listen, server_name, root, index, allowed_methods }
+   │   └── Lit location { path, root, index, allowed_methods, client_max_body_size }
+   ├── Affiche la configuration parsée
+   └── Crée Server(config) avec la configuration complète
+
+2️⃣ Server::ft_init_server()
+   ├── socket() → Crée le socket TCP
+   ├── setsockopt(SO_REUSEADDR) → Permet de redémarrer rapidement
+   ├── fcntl(O_NONBLOCK) → Socket non-bloquant
+   ├── bind() → Lie le socket au port (_config.listen)
+   └── Configuration depuis _config au lieu de valeurs en dur
+
+3️⃣ Server::ft_start_listening()
+   ├── listen() → Met le socket en écoute
+   ├── FD_SET() → Ajoute le socket au fd_set
+   └── Affiche "Server listening on {server_name}:{port}"
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       🔄 BOUCLE PRINCIPALE DU SERVEUR                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+4️⃣ Server::ft_handle_connections() - BOUCLE INFINIE
+   ├── select() → Attend des événements sur les sockets
+   ├── Parcourt tous les file descriptors
+   └── Pour chaque socket actif :
+       ├── Si c'est _server_fd → ft_accept_new_client()
+       └── Sinon → ft_handle_client_request(client_fd)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         🤝 GESTION D'UNE NOUVELLE CONNEXION                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+5️⃣ Server::ft_accept_new_client()
+   ├── accept() → Accepte la connexion client
+   ├── fcntl(O_NONBLOCK) → Rend le socket client non-bloquant
+   ├── FD_SET() → Ajoute le client au fd_set de surveillance
+   ├── _client_fds.push_back() → Stocke le fd client
+   └── Met à jour _max_fd si nécessaire
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      📨 TRAITEMENT D'UNE REQUÊTE CLIENT                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+6️⃣ Server::ft_handle_client_request(client_fd)
+   │
+   ├── recv() → Reçoit les données brutes du client
+   │   └── Exemple : "GET /index.html HTTP/1.1\r\nHost: localhost..."
+   │
+   ├── ft_is_request_complete() → Vérifie si la requête est complète
+   │   ├── Cherche "\r\n\r\n" (fin des headers)
+   │   ├── Pour GET/DELETE : OK si headers complets
+   │   └── Pour POST : Vérifie que le body est complet selon Content-Length
+   │
+   ├── ft_parse_http_request() → PARSING COMPLET DE LA REQUÊTE
+   │   │
+   │   ├── 📝 ft_parse_request_line()
+   │   │   ├── Sépare "GET /index.html HTTP/1.1"
+   │   │   ├── Valide method ∈ {GET, POST, DELETE}
+   │   │   ├── Valide version = "HTTP/1.1"
+   │   │   ├── Valide URI commence par "/"
+   │   │   └── Stocke : request.method, request.uri, request.version
+   │   │
+   │   ├── 📋 ft_parse_headers()
+   │   │   ├── Parse chaque ligne "Key: Value"
+   │   │   ├── Trim les espaces
+   │   │   ├── Convertit les clés en minuscules
+   │   │   └── Stocke dans request.headers["key"] = "value"
+   │   │
+   │   └── Pour POST : Extrait le body selon Content-Length
+   │       └── Stocke dans request.body
+   │
+   └── ft_handle_request_with_config(method, uri) → TRAITEMENT AVEC CONFIG
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ⚙️ TRAITEMENT AVEC CONFIGURATION                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+7️⃣ Server::ft_handle_request_with_config(method, uri)
+   │
+   ├── 🎯 ft_find_location(uri) → Trouve la location qui match
+   │   ├── Parcourt _config.locations[]
+   │   ├── Vérifie si uri.find(location.path) == 0
+   │   └── Prend la location avec le path le plus long (plus précise)
+   │   
+   ├── ✅ ft_is_method_allowed(method, location)
+   │   ├── Utilise location->allowed_methods si existe
+   │   ├── Sinon utilise _config.allowed_methods
+   │   └── Retourne true/false selon si method est autorisée
+   │
+   └── Router selon la méthode :
+       ├── GET → ft_serve_static_file_with_config(uri)
+       ├── POST → Retourne 405 (pas encore implémenté)
+       └── DELETE → Retourne 405 (pas encore implémenté)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        📁 SERVIR UN FICHIER STATIQUE                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+8️⃣ Server::ft_serve_static_file_with_config(uri)
+   │
+   ├── 🎯 ft_find_location(uri) → Re-trouve la location
+   │
+   ├── 📂 ft_get_file_path(uri, location) → CONSTRUCTION DU CHEMIN
+   │   │
+   │   ├── Détermine root et index :
+   │   │   ├── Si location existe : location->root ou _config.root
+   │   │   └── Sinon : _config.root et _config.index
+   │   │
+   │   ├── Construction du chemin :
+   │   │   ├── Si uri == "/" → root + "/" + index
+   │   │   ├── Si location et uri match location->path → 
+   │   │   │   └── Enlève le path de location de l'URI
+   │   │   └── Sinon → root + uri
+   │   │
+   │   └── Exemples :
+   │       ├── uri="/" + config simple → "./www/index.html"
+   │       ├── uri="/admin" + location "/admin" → "./www/about.html"
+   │       └── uri="/test.html" → "./www/test.html"
+   │
+   ├── 🐍 Détection CGI : Si file_path se termine par ".py"
+   │   └── ft_execute_cgi(file_path) → Exécute le script Python
+   │
+   ├── 📖 ft_read_file_simple(file_path) → Lit le fichier
+   │   ├── ifstream(file_path) → Ouvre le fichier
+   │   ├── getline() en boucle → Lit ligne par ligne
+   │   └── Retourne le contenu ou "" si erreur
+   │
+   ├── 🏷️ ft_get_content_type(file_path) → Détermine le MIME type
+   │   ├── Trouve l'extension (.html, .css, .js, .png...)
+   │   └── Retourne le Content-Type approprié
+   │
+   └── 📤 Construction de la réponse HTTP :
+       ├── "HTTP/1.1 200 OK\r\n"
+       ├── "Content-Type: text/html\r\n"
+       ├── "Content-Length: 1234\r\n"
+       ├── "Server: WebServ/1.0\r\n"
+       ├── "Connection: close\r\n"
+       ├── "\r\n"
+       └── [contenu du fichier]
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           🐍 EXÉCUTION CGI (optionnel)                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+9️⃣ Server::ft_execute_cgi(script_path) - SI FICHIER .py
+   ├── popen("python3 " + script_path) → Exécute le script
+   ├── fgets() en boucle → Lit la sortie du script
+   ├── Sépare headers et body du script
+   ├── Calcule Content-Length du body
+   └── Construit la réponse HTTP complète
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          📤 ENVOI DE LA RÉPONSE                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🔟 Retour dans ft_handle_client_request()
+   ├── send() → Envoie la réponse HTTP au client
+   └── ft_disconnect_client() → Ferme la connexion
+       ├── close(client_fd) → Ferme le socket
+       ├── FD_CLR() → Retire de la surveillance
+       └── Supprime de _client_fds
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             🔄 RETOUR EN BOUCLE                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Le serveur retourne en boucle à l'étape 4️⃣ et attend la prochaine connexion...
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         📊 EXEMPLE DE TRAITEMENT COMPLET                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+curl http://localhost:8080/
+│
+├── Client envoie : "GET / HTTP/1.1\r\nHost: localhost:8080\r\n\r\n"
+├── Serveur parse : method="GET", uri="/", headers={"host":"localhost:8080"}
+├── ft_find_location("/") → Aucune location (config simple)
+├── ft_is_method_allowed("GET") → true (GET autorisé)
+├── ft_get_file_path("/") → "./www/index.html"
+├── ft_read_file_simple() → Lit le contenu d'index.html
+├── Construit réponse : "HTTP/1.1 200 OK..." + contenu HTML
+└── send() → Envoie au client qui affiche la page
+
+curl http://localhost:3000/admin (avec config advanced)
+│
+├── Client envoie : "GET /admin HTTP/1.1\r\nHost: localhost:3000\r\n\r\n"
+├── Serveur parse : method="GET", uri="/admin"
+├── ft_find_location("/admin") → Trouve location "/admin"
+├── ft_is_method_allowed("GET", location) → true
+├── ft_get_file_path("/admin", location) → "./www/about.html" (index de la location!)
+├── ft_read_file_simple() → Lit about.html au lieu d'un fichier "admin"
+└── send() → Envoie about.html au client
