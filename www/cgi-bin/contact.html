@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Contact - WebServ</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 50px; background: #fff8e1; }
+.container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; border: 2px solid #FF9800; }
+input[type="text"], input[type="email"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; height: 120px; }
+input[type="submit"] { background: #FF9800; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; }
+input[type="submit"]:hover { background: #F57C00; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>📧 Formulaire de contact</h2>
+<form method="POST" action="/contact">
+<label>Votre nom :</label>
+<input type="text" name="name" required placeholder="Votre nom complet">
+
+<label>Votre email :</label>
+<input type="email" name="email" required placeholder="votre@email.com">
+
+<label>Sujet :</label>
+<input type="text" name="subject" placeholder="Sujet de votre message">
+
+<label>Message :</label>
+<textarea name="message" placeholder="Votre message..." required></textarea>
+
+<input type="submit" value="📧 Envoyer le message">
+</form>
+
+<p><em>Note : Cette démo affiche les données reçues sans les envoyer réellement.</em></p>
+<p><a href="/dev.html">← Retour à l'espace développeur</a></p>
+<p><a href="/">← Accueil</a></p>
+</div>
+</body>
+</html>

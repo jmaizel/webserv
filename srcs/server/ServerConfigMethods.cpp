@@ -89,10 +89,16 @@ std::string Server::ft_get_file_path(const std::string& uri, const LocationConfi
 	}
 	else
 	{
-		// Fichier spécifique
-		if (location && !location->path.empty() && uri.find(location->path) == 0)
+		// Pour les fichiers spécifiques, utiliser l'URI tel quel
+		// Ne pas essayer d'enlever le path de la location pour les fichiers .html, .css, etc.
+		if (uri.find(".") != std::string::npos)
 		{
-			// Enlever le path de la location de l'URI
+			// C'est un fichier avec extension → utiliser l'URI directement
+			file_path += uri;
+		}
+		else if (location && !location->path.empty() && uri.find(location->path) == 0)
+		{
+			// C'est un path de location sans extension → traitement spécial
 			std::string relative_path = uri.substr(location->path.length());
 			if (!relative_path.empty() && relative_path[0] == '/')
 				relative_path = relative_path.substr(1);

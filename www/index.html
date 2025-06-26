@@ -1,12 +1,230 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-    <title>WebServ - Page d'accueil</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebServ - Serveur HTTP C++</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            padding: 2rem 0;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .hero-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 10px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #36d1dc, #5b86e5);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #11998e, #38ef7d);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat {
+            text-align: center;
+            color: white;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            padding: 2rem 0;
+            opacity: 0.8;
+        }
+        
+        .nav-buttons {
+            text-align: center;
+            margin: 2rem 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>Ma page d'accueil</h1>
-    <p>Fichier lu avec succès depuis le serveur WebServ !</p>
-    <p><a href="/about.html">Page About</a></p>
-    <p><a href="/cgi-bin/time.py">Script Python</a></p>
+    <div class="container">
+        <header>
+            <h1>🚀 WebServ</h1>
+            <p class="subtitle">Serveur HTTP moderne développé en C++98 - École 42</p>
+            
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-number">C++98</span>
+                    <span class="stat-label">Standard</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">HTTP/1.1</span>
+                    <span class="stat-label">Protocol</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">CGI</span>
+                    <span class="stat-label">Support</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">42</span>
+                    <span class="stat-label">École</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="hero-card">
+            <h2 style="text-align: center; margin-bottom: 1.5rem; color: #667eea;">
+                Bienvenue sur WebServ ! 🎉
+            </h2>
+            <p style="text-align: center; font-size: 1.1rem; line-height: 1.6; margin-bottom: 2rem;">
+                Un serveur web performant et moderne, développé from scratch en C++. 
+                Ce projet implémente le protocole HTTP/1.1 avec support des méthodes GET, POST, DELETE,
+                configuration par fichiers, et exécution de scripts CGI.
+            </p>
+            
+            <div class="nav-buttons">
+                <a href="/login.html" class="btn">🔐 Connexion Développeur</a>
+                <a href="/about.html" class="btn btn-secondary">📖 À propos</a>
+                <a href="/cgi-bin/time.py" class="btn btn-success">🐍 Test CGI Python</a>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Performance</h3>
+                <p>Architecture non-bloquante avec select() pour gérer de multiples connexions simultanées efficacement.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔧</div>
+                <h3>Configuration</h3>
+                <p>Système de configuration flexible inspiré de Nginx pour définir ports, locations et règles.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <h3>HTTP/1.1</h3>
+                <p>Support complet du protocole HTTP/1.1 avec gestion des headers, méthodes et codes de statut.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Sécurité</h3>
+                <p>Validation des requêtes, limitation de taille, gestion d'erreurs et protection contre les attaques.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📁</div>
+                <h3>Fichiers Statiques</h3>
+                <p>Serveur de fichiers avec détection automatique du type MIME et gestion des erreurs 404.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🐍</div>
+                <h3>CGI</h3>
+                <p>Exécution de scripts externes (Python, PHP, etc.) avec passage d'environnement et récupération de sortie.</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p>🎓 Projet développé dans le cadre du cursus École 42</p>
+            <p>💻 Implémentation complète d'un serveur HTTP en C++98</p>
+        </footer>
+    </div>
 </body>
 </html>

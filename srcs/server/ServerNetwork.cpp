@@ -38,6 +38,37 @@ void Server::ft_accept_new_client(void)
 	std::cout << "New client connected: " << client_fd << std::endl;
 }
 
+std::string Server::ft_handle_delete(const std::string& uri) {
+    // 1. Convertir l'URI en chemin local (à adapter selon ton root)
+    std::string root = "./www"; // Change selon ta config
+    std::string path = root + uri;
+
+    // 2. Vérifier si le fichier existe
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) {
+        // Fichier inexistant
+        return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+    }
+
+    // 3. Vérifier que c'est un fichier (pas un dossier)
+    if (S_ISDIR(st.st_mode)) {
+        return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
+    }
+
+    // 4. Essayer de supprimer le fichier
+    if (remove(path.c_str()) == 0) {
+        // Succès
+        return "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n";
+    } else {
+        // Erreur système (permissions, etc.)
+        std::ostringstream oss;
+        oss << "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n";
+        oss << "Content-Length: " << strlen(strerror(errno)) << "\r\n\r\n";
+        oss << strerror(errno);
+        return oss.str();
+    }
+}
+
 void Server::ft_handle_client_request(int client_fd)
 {
 	// 1. Buffer pour recevoir les données
@@ -87,8 +118,8 @@ void Server::ft_handle_client_request(int client_fd)
 	std::cout << "  Version: " << request.version << std::endl;
 	std::cout << "  Headers: " << request.headers.size() << " header(s)" << std::endl;
 	
-	// 8. NOUVEAU : Utiliser la configuration pour traiter la requête
-	std::string response = ft_handle_request_with_config(request.method, request.uri);
+	// 8. NOUVEAU : Utiliser la configuration pour traiter la requête avec le body
+	std::string response = ft_handle_request_with_config(request.method, request.uri, request.body);
 	
 	// 9. Envoyer la réponse au client
 	send(client_fd, response.c_str(), response.length(), 0);

@@ -1,8 +1,12 @@
-#include "Server.hpp"
+#include "../../includes/Server.hpp"
+#include "../../includes/HttpRequest.hpp"
 #include <sstream>
 
-// NOUVELLE MÉTHODE : Traiter la requête avec la configuration
-std::string Server::ft_handle_request_with_config(const std::string& method, const std::string& uri)
+HttpRequest ft_parse_http_request(const std::string& raw_data);
+bool ft_is_request_complete(const std::string& data);
+
+// NOUVELLE MÉTHODE : Traiter la requête avec la configuration ET le body
+std::string Server::ft_handle_request_with_config(const std::string& method, const std::string& uri, const std::string& body)
 {
 	std::cout << "Processing " << method << " request for: " << uri << " with config" << std::endl;
 	
@@ -27,19 +31,63 @@ std::string Server::ft_handle_request_with_config(const std::string& method, con
 	}
 	else if (method == "POST")
 	{
-		// TODO: Implémenter POST avec config
-		std::cout << "POST method (not implemented yet)" << std::endl;
-		return ft_build_405_response();
+		// NOUVEAU : Gérer POST avec le body
+		return ft_handle_post_request_with_config(uri, body);
 	}
 	else if (method == "DELETE")
 	{
-		// TODO: Implémenter DELETE avec config
-		std::cout << "DELETE method (not implemented yet)" << std::endl;
-		return ft_build_405_response();
+		std::cout << "DELETE request received for: " << request.uri << std::endl;
+		response = ft_handle_delete(request.uri);
 	}
 	else
 	{
 		return ft_build_405_response();
+	}
+}
+
+// NOUVELLE MÉTHODE : Gérer POST avec configuration
+std::string Server::ft_handle_post_request_with_config(const std::string& uri, const std::string& body)
+{
+	std::cout << "Handling POST request for: " << uri << std::endl;
+	std::cout << "POST body: " << body << std::endl;
+	
+	// 1. Vérifier la taille du body selon la config
+	const LocationConfig* location = ft_find_location(uri);
+	int max_body_size = location ? location->client_max_body_size : 1000000; // 1MB par défaut
+	
+	if (static_cast<int>(body.length()) > max_body_size)
+	{
+		std::cout << "POST body too large: " << body.length() << " > " << max_body_size << std::endl;
+		return ft_build_413_response();
+	}
+	
+	// 2. Parser les données POST (comme ton ami)
+	std::map<std::string, std::string> post_params = ft_parse_post_data(body);
+	
+	// 3. Afficher les paramètres reçus
+	std::cout << "POST parameters:" << std::endl;
+	std::map<std::string, std::string>::iterator it;
+	for (it = post_params.begin(); it != post_params.end(); ++it)
+	{
+		std::cout << "  " << it->first << " = " << it->second << std::endl;
+	}
+	
+	// 4. Router selon l'URI
+	if (uri == "/login")
+	{
+		return ft_handle_login(post_params);
+	}
+	else if (uri == "/upload")
+	{
+		return ft_handle_upload(post_params);
+	}
+	else if (uri == "/contact")
+	{
+		return ft_handle_contact(post_params);
+	}
+	else
+	{
+		return ft_build_post_success_response("POST reçu avec succès pour " + uri + " !");
 	}
 }
 
@@ -220,6 +268,24 @@ std::string Server::ft_build_405_response(void)
 	oss << body.length();
 	
 	std::string response = "HTTP/1.1 405 Method Not Allowed\r\n";
+	response += "Content-Type: text/html\r\n";
+	response += "Content-Length: " + oss.str() + "\r\n\r\n";
+	response += body;
+	
+	return response;
+}
+
+std::string Server::ft_build_413_response(void)
+{
+	std::string body = "<!DOCTYPE html>\n<html>\n<head><title>413 Payload Too Large</title></head>\n";
+	body += "<body style='font-family: Arial; text-align: center; margin-top: 50px;'>\n";
+	body += "<h1>413 - Payload Too Large</h1>\n<p>The request body is too large.</p>\n";
+	body += "<hr>\n<p><em>WebServ/1.0</em></p>\n</body>\n</html>";
+	
+	std::ostringstream oss;
+	oss << body.length();
+	
+	std::string response = "HTTP/1.1 413 Payload Too Large\r\n";
 	response += "Content-Type: text/html\r\n";
 	response += "Content-Length: " + oss.str() + "\r\n\r\n";
 	response += body;

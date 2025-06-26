@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Upload - WebServ</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 50px; background: #f0f8ff; }
+.container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; border: 2px solid #2196F3; }
+input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+textarea { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; height: 100px; }
+input[type="submit"] { background: #2196F3; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; }
+input[type="submit"]:hover { background: #1976D2; }
+</style>
+</head>
+<body>
+<div class="container">
+<h2>📤 Upload de fichiers</h2>
+<form method="POST" action="/upload" enctype="multipart/form-data">
+<label>Nom du fichier :</label>
+<input type="text" name="filename" required placeholder="exemple.txt">
+
+<label>Contenu du fichier :</label>
+<textarea name="content" placeholder="Entrez le contenu du fichier ici..." required></textarea>
+
+<input type="submit" value="📤 Uploader le fichier">
+</form>
+
+<p><em>Note : Cette démo simule l'upload en affichant les données reçues.</em></p>
+<p><a href="/dev.html">← Retour à l'espace développeur</a></p>
+<p><a href="/">← Accueil</a></p>
+</div>
+</body>
+</html>
