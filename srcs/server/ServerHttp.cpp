@@ -24,20 +24,17 @@ std::string Server::ft_handle_request_with_config(const std::string& method, con
 		return ft_build_405_response();
 	}
 	
-	// 3. Router selon la méthode
 	if (method == "GET")
 	{
 		return ft_serve_static_file_with_config(uri);
 	}
 	else if (method == "POST")
 	{
-		// NOUVEAU : Gérer POST avec le body
 		return ft_handle_post_request_with_config(uri, body);
 	}
 	else if (method == "DELETE")
 	{
-		std::cout << "DELETE request received for: " << request.uri << std::endl;
-		response = ft_handle_delete(request.uri);
+		std::cout << "DELETE not implemted yet" << std::endl;
 	}
 	else
 	{
@@ -45,7 +42,7 @@ std::string Server::ft_handle_request_with_config(const std::string& method, con
 	}
 }
 
-// NOUVELLE MÉTHODE : Gérer POST avec configuration
+// Gérer POST avec configuration
 std::string Server::ft_handle_post_request_with_config(const std::string& uri, const std::string& body)
 {
 	std::cout << "Handling POST request for: " << uri << std::endl;
@@ -91,7 +88,7 @@ std::string Server::ft_handle_post_request_with_config(const std::string& uri, c
 	}
 }
 
-// NOUVELLE MÉTHODE : Servir fichier statique avec la config
+//Servir fichier statique avec la config
 std::string Server::ft_serve_static_file_with_config(const std::string& uri)
 {
 	std::cout << "Serving static file for URI: " << uri << " with config" << std::endl;
