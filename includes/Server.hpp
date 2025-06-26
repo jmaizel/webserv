@@ -16,6 +16,10 @@
 # include <cstdio>
 # include <fstream>
 # include <cstdlib>
+# include <sys/stat.h>
+# include <cerrno>
+# include <cstring>
+
 # define MAX_CLIENTS 1024
 # define BUFFER_SIZE 4096
 
@@ -51,6 +55,7 @@ class Server
 		void			ft_disconnect_client(int client_fd);
 		
 		// Methodes HTTP (ServerHttp.cpp)
+		std::string 	ft_handle_delete(const std::string& uri);
 		std::string		ft_handle_request_simple(const std::string& uri);
 		std::string		ft_execute_cgi(const std::string& script_path);
 		std::string		ft_build_404_response(void);

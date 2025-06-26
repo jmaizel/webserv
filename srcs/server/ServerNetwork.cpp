@@ -1,5 +1,5 @@
-#include "Server.hpp"
-#include "HttpRequest.hpp"
+#include "../../includes/Server.hpp"
+#include "../../includes/HttpRequest.hpp"
 #include <sstream>
 
 // Fonctions de parsing HTTP externes (définies dans srcs/http/)
@@ -116,9 +116,8 @@ void Server::ft_handle_client_request(int client_fd)
 	}
 	else if (request.method == "DELETE")
 	{
-		// TODO: Implémenter DELETE
 		std::cout << "DELETE request received for: " << request.uri << std::endl;
-		response = ft_build_405_response();
+		response = ft_handle_delete(request.uri);
 	}
 	else
 	{

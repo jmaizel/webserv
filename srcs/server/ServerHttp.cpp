@@ -1,6 +1,35 @@
-#include "Server.hpp"
-#include <sstream>
+#include "../../includes/Server.hpp"
 
+std::string Server::ft_handle_delete(const std::string& uri) {
+    // 1. Convertir l'URI en chemin local (à adapter selon ton root)
+    std::string root = "./www"; // Change selon ta config
+    std::string path = root + uri;
+
+    // 2. Vérifier si le fichier existe
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) {
+        // Fichier inexistant
+        return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+    }
+
+    // 3. Vérifier que c'est un fichier (pas un dossier)
+    if (S_ISDIR(st.st_mode)) {
+        return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
+    }
+
+    // 4. Essayer de supprimer le fichier
+    if (remove(path.c_str()) == 0) {
+        // Succès
+        return "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n";
+    } else {
+        // Erreur système (permissions, etc.)
+        std::ostringstream oss;
+        oss << "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n";
+        oss << "Content-Length: " << strlen(strerror(errno)) << "\r\n\r\n";
+        oss << strerror(errno);
+        return oss.str();
+    }
+}
 std::string Server::ft_handle_request_simple(const std::string& uri)
 {
 	// 1. Décision : script CGI ou fichier statique ?

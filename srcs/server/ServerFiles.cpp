@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../../includes/Server.hpp"
 #include <sstream>
 
 std::string Server::ft_serve_static_file(const std::string& uri)
