@@ -34,7 +34,8 @@ std::string Server::ft_handle_request_with_config(const std::string& method, con
 	}
 	else if (method == "DELETE")
 	{
-		std::cout << "DELETE not implemted yet" << std::endl;
+		std::cout << "DELETE method (not implemented yet)" << std::endl;
+		return ft_build_405_response();
 	}
 	else
 	{
@@ -88,7 +89,7 @@ std::string Server::ft_handle_post_request_with_config(const std::string& uri, c
 	}
 }
 
-//Servir fichier statique avec la config
+// Servir fichier statique avec la config
 std::string Server::ft_serve_static_file_with_config(const std::string& uri)
 {
 	std::cout << "Serving static file for URI: " << uri << " with config" << std::endl;
