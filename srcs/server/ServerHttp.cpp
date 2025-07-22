@@ -2,8 +2,7 @@
 
 std::string Server::ft_handle_delete(const std::string& uri) {
     // 1. Convertir l'URI en chemin local (à adapter selon ton root)
-    std::string root = "./www"; // Change selon ta config
-    std::string path = root + uri;
+    std::string path = "./" + uri;
 
     // 2. Vérifier si le fichier existe
     struct stat st;
