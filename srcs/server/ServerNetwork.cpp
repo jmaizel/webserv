@@ -1,5 +1,5 @@
-#include "Server.hpp"
-#include "HttpRequest.hpp"
+#include "../../includes/Server.hpp"
+#include "../../includes/HttpRequest.hpp"
 #include <sstream>
 
 // Fonctions de parsing HTTP externes
@@ -40,8 +40,7 @@ void Server::ft_accept_new_client(void)
 
 std::string Server::ft_handle_delete(const std::string& uri) {
     // 1. Convertir l'URI en chemin local (à adapter selon ton root)
-    std::string root = "./www"; // Change selon ta config
-    std::string path = root + uri;
+    std::string path = "./" + uri;
 
     // 2. Vérifier si le fichier existe
     struct stat st;

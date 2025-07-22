@@ -34,8 +34,7 @@ std::string Server::ft_handle_request_with_config(const std::string& method, con
 	}
 	else if (method == "DELETE")
 	{
-		std::cout << "DELETE method (not implemented yet)" << std::endl;
-		return ft_build_405_response();
+		return ft_handle_delete(uri);
 	}
 	else
 	{

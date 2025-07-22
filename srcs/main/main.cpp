@@ -1,7 +1,7 @@
-#include "Server.hpp"
+#include "../../includes/Server.hpp"
 #include <iostream>
 #include <cstdlib>
-#include "ServerConfig.hpp"
+#include "../../includes/ServerConfig.hpp"
 
 void ft_print_config(const ServerConfig& config)
 {

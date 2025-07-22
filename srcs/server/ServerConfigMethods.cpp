@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../../includes/Server.hpp"
 
 // Trouve la location qui correspond le mieux à l'URI
 const LocationConfig* Server::ft_find_location(const std::string& uri)
