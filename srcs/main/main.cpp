@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/23 11:51:34 by jmaizel           #+#    #+#             */
+/*   Updated: 2025/07/23 11:51:35 by jmaizel          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../../includes/Server.hpp"
 #include <iostream>
 #include <cstdlib>
@@ -72,7 +84,7 @@ int main(int ac, char** av)
         
         std::cout << "✅ Configuration chargée avec succès !" << std::endl << std::endl;
         
-        // Afficher la configuration de manière claire
+        // Afficher la configuration
         ft_print_config(config);
         
         std::cout << "🚀 Démarrage de WebServ..." << std::endl;

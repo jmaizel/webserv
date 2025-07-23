@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   HttpHeaders.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/23 11:51:21 by jmaizel           #+#    #+#             */
+/*   Updated: 2025/07/23 11:51:23 by jmaizel          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "HttpRequest.hpp"
 #include <sstream>
 #include <iostream>
@@ -11,12 +23,8 @@ std::string ft_trim_header(const std::string& str)
     
     size_t start = 0;
     size_t end = str.length();
-    
-    // Trouver le premier caractère non-espace
     while (start < str.length() && std::isspace(str[start]))
         start++;
-    
-    // Trouver le dernier caractère non-espace
     while (end > start && std::isspace(str[end - 1]))
         end--;
     
@@ -40,7 +48,7 @@ std::string ft_to_lower_header(const std::string& str)
 bool ft_parse_headers(const std::string& headers_block, HttpRequest& request)
 {
     if (headers_block.empty())
-        return true;  // Pas de headers, c'est ok
+        return true;
     
     std::istringstream stream(headers_block);
     std::string line;

@@ -6,30 +6,25 @@
 /*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/12 11:36:48 by mwattier          #+#    #+#             */
-/*   Updated: 2025/06/24 13:32:29 by jmaizel          ###   ########.fr       */
+/*   Updated: 2025/07/23 11:51:42 by jmaizel          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/ServerConfig.hpp"
 
-// Fonction helper pour trimmer les espaces et enlever les ';'
 std::string ft_trim_line(const std::string& line)
 {
     size_t start = 0;
     size_t end = line.length();
-    
-    // Trouver le premier caractère non-espace
     while (start < line.length() && std::isspace(line[start]))
         start++;
-    
-    // Trouver le dernier caractère non-espace/non-;
     while (end > start && (std::isspace(line[end - 1]) || line[end - 1] == ';'))
         end--;
-    
     return line.substr(start, end - start);
 }
 
-void parseDirective(const std::string& line, ServerConfig& config) {
+void parseDirective(const std::string& line, ServerConfig& config) 
+{
     std::string trimmed = ft_trim_line(line);
     std::istringstream iss(trimmed);
     std::string key;
@@ -51,7 +46,8 @@ void parseDirective(const std::string& line, ServerConfig& config) {
     }
 }
 
-void parseLocation(std::ifstream& file, ServerConfig& config, const std::string& location_line) {
+void parseLocation(std::ifstream& file, ServerConfig& config, const std::string& location_line) 
+{
     LocationConfig loc;
     
     // Parser la ligne location pour extraire le path
@@ -90,7 +86,8 @@ void parseLocation(std::ifstream& file, ServerConfig& config, const std::string&
     config.locations.push_back(loc);
 }
 
-ServerConfig parseConfigFile(const std::string& filename) {
+ServerConfig parseConfigFile(const std::string& filename) 
+{
     std::ifstream file(filename.c_str());
     ServerConfig config;
     std::string line;
@@ -98,8 +95,6 @@ ServerConfig parseConfigFile(const std::string& filename) {
     if (!file.is_open()) {
         throw std::runtime_error("Cannot open config file: " + filename);
     }
-
-    // Valeurs par défaut
     config.listen = 8080;
     config.server_name = "localhost";
     config.root = "./www";

@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   HttpParser.cpp                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/23 11:51:26 by jmaizel           #+#    #+#             */
+/*   Updated: 2025/07/23 11:51:26 by jmaizel          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "HttpRequest.hpp"
 #include <cctype>
 
@@ -27,15 +39,15 @@ HttpRequest ft_parse_http_request(const std::string& raw_data)
     }
     
     std::string request_line = headers_part.substr(0, first_line_end);
-    std::string headers_block = headers_part.substr(first_line_end + 2);  // Skip "\r\n"
+    std::string headers_block = headers_part.substr(first_line_end + 2);
     
     // 4. Parser la request line
     if (!ft_parse_request_line(request_line, request))
-        return request;  // Erreur déjà définie dans la fonction
+        return request;
     
     // 5. Parser les headers
     if (!ft_parse_headers(headers_block, request))
-        return request;  // Erreur déjà définie dans la fonction
+        return request;
     
     // 6. Pour POST, récupérer le body si Content-Length existe
     if (request.method == "POST")
@@ -50,8 +62,6 @@ HttpRequest ft_parse_http_request(const std::string& raw_data)
             }
         }
     }
-    
-    // 7. Tout est OK !
     request.is_valid = true;
     return request;
 }
@@ -75,7 +85,7 @@ bool ft_is_request_complete(const std::string& data)
         size_t cl_pos = data.find("content-length:");
         if (cl_pos == std::string::npos)
             cl_pos = data.find("Content-Length:");
-        
+
         if (cl_pos != std::string::npos && cl_pos < headers_end)
         {
             // Extraire la valeur de Content-Length
@@ -87,7 +97,6 @@ bool ft_is_request_complete(const std::string& data)
                 if (colon_pos != std::string::npos)
                 {
                     std::string cl_value = cl_line.substr(colon_pos + 1);
-                    
                     // Enlever les espaces
                     size_t start = 0;
                     while (start < cl_value.length() && std::isspace(cl_value[start]))
@@ -101,8 +110,7 @@ bool ft_is_request_complete(const std::string& data)
                 }
             }
         }
-        return false;  // POST sans Content-Length valide
+        return false;
     }
-    
-    return true;  // Méthode inconnue, on suppose que c'est complet
+    return true;
 }

@@ -5,6 +5,7 @@
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <sys/select.h>
+# include <sys/wait.h>        // Pour waitpid
 # include <unistd.h>
 # include <fcntl.h>
 # include <iostream>
@@ -16,7 +17,8 @@
 # include <cstdio>
 # include <fstream>
 # include <cstdlib>
-# include "ServerConfig.hpp"  // AJOUT pour utiliser la config
+# include "ServerConfig.hpp"
+# include "HttpRequest.hpp"   // ← AJOUTE CETTE LIGNE
 # include <sys/stat.h>
 # include <cerrno>
 # include <cstring>
@@ -58,7 +60,13 @@ class Server
 		std::string 	ft_handle_delete(const std::string& uri);
 		std::string		ft_handle_request_simple(const std::string& uri);  // Ancienne méthode
 		std::string		ft_handle_request_with_config(const std::string& method, const std::string& uri, const std::string& body);  // NOUVEAU
-		std::string		ft_execute_cgi(const std::string& script_path);
+		
+		// CGI - Deux versions pour compatibilité
+		std::string		ft_execute_cgi(const std::string& script_path, const HttpRequest& request);  // Nouvelle version
+		std::string		ft_build_cgi_response(const std::string& cgi_output);
+		std::string		ft_to_upper_env(const std::string& str);
+		
+		// Réponses d'erreur
 		std::string		ft_build_404_response(void);
 		std::string		ft_build_403_response(void);
 		std::string		ft_build_400_response(void);
@@ -87,7 +95,10 @@ class Server
 		const LocationConfig*	ft_find_location(const std::string& uri);
 		bool					ft_is_method_allowed(const std::string& method, const LocationConfig* location);
 		std::string				ft_get_file_path(const std::string& uri, const LocationConfig* location);
-		std::string     ft_build_redirect_response(const std::string& location);
+		std::string				ft_build_redirect_response(const std::string& location);
+		
+		// Helper pour CGI
+		std::string		ft_get_directory_path(const std::string& file_path);
 };
 
 #endif

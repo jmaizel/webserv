@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ServerFiles.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jmaizel <jmaizel@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/23 11:52:15 by jmaizel           #+#    #+#             */
+/*   Updated: 2025/07/23 11:58:24 by jmaizel          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../../includes/Server.hpp"
 #include <sstream>
 
@@ -6,11 +18,11 @@ std::string Server::ft_serve_static_file(const std::string& uri)
 	std::cout << "Trying to serve file for URI: " << uri << std::endl;
 	
 	// 1. Construire le chemin du fichier sur le système
-	std::string file_path = "./www";   // Document root
+	std::string file_path = "./www";
 	if (uri == "/") {
-		file_path += "/index.html";    // Page par défaut
+		file_path += "/index.html";
 	} else {
-		file_path += uri;              // Fichier demandé
+		file_path += uri;
 	}
 	
 	// 2. Lire le contenu du fichier
