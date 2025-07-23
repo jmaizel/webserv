@@ -5,7 +5,7 @@
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <sys/select.h>
-# include <sys/wait.h>        // Pour waitpid
+# include <sys/wait.h> 
 # include <unistd.h>
 # include <fcntl.h>
 # include <iostream>
@@ -18,7 +18,7 @@
 # include <fstream>
 # include <cstdlib>
 # include "ServerConfig.hpp"
-# include "HttpRequest.hpp"   // ← AJOUTE CETTE LIGNE
+# include "HttpRequest.hpp"
 # include <sys/stat.h>
 # include <cerrno>
 # include <cstring>
@@ -36,12 +36,12 @@ class Server
 		fd_set				_master_fds;
 		int					_max_fd;
 		std::vector<int>	_client_fds;
-		ServerConfig		_config;  // NOUVEAU : Stocker la configuration
+		ServerConfig		_config;
 
 	public:
 		// Classe canonique
 		Server(void);
-		Server(const ServerConfig& config);  // NOUVEAU : Constructeur avec config
+		Server(const ServerConfig& config);
 		Server(const Server& other);
 		~Server(void);
 		Server& operator=(const Server& other);
@@ -59,10 +59,10 @@ class Server
 		// Methodes HTTP (ServerHttp.cpp)
 		std::string 	ft_handle_delete(const std::string& uri);
 		std::string		ft_handle_request_simple(const std::string& uri);  // Ancienne méthode
-		std::string		ft_handle_request_with_config(const std::string& method, const std::string& uri, const std::string& body);  // NOUVEAU
+		std::string		ft_handle_request_with_config(const std::string& method, const std::string& uri, const std::string& body);
 		
 		// CGI - Deux versions pour compatibilité
-		std::string		ft_execute_cgi(const std::string& script_path, const HttpRequest& request);  // Nouvelle version
+		std::string		ft_execute_cgi(const std::string& script_path, const HttpRequest& request);
 		std::string		ft_build_cgi_response(const std::string& cgi_output);
 		std::string		ft_to_upper_env(const std::string& str);
 		
@@ -71,7 +71,7 @@ class Server
 		std::string		ft_build_403_response(void);
 		std::string		ft_build_400_response(void);
 		std::string		ft_build_405_response(void);
-		std::string		ft_build_413_response(void);  // NOUVEAU : Payload Too Large
+		std::string		ft_build_413_response(void); 
 		
 		// Methodes POST (NOUVEAU)
 		std::string		ft_handle_post_request_with_config(const std::string& uri, const std::string& body);
@@ -89,7 +89,7 @@ class Server
 		std::string		ft_read_file_simple(const std::string& file_path);
 		std::string		ft_get_content_type(const std::string& file_path);
 		std::string		ft_serve_static_file(const std::string& uri);  // Ancienne méthode
-		std::string		ft_serve_static_file_with_config(const std::string& uri);  // NOUVEAU
+		std::string		ft_serve_static_file_with_config(const std::string& uri);
 		
 		// Methodes configuration (ServerConfigMethods.cpp) - NOUVEAU
 		const LocationConfig*	ft_find_location(const std::string& uri);
