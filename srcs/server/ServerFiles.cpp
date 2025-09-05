@@ -29,9 +29,16 @@ std::string Server::ft_serve_static_file(const std::string& uri)
 	std::string file_content = ft_read_file_simple(file_path);
 	
 	// 3. Vérifier si le fichier existe
-	if (file_content.empty()) {
-		// Fichier introuvable → retourner 404
-		return ft_build_404_response();
+	if (file_content.empty())
+	{
+		if (errno == EACCES)
+        	return ft_build_403_response(); 	
+		else if (errno == ENOENT)
+        	return ft_build_404_response();
+		else
+		{
+        	return ft_build_500_response();
+    	}
 	}
 	
 	// 4. Déterminer le Content-Type selon l'extension
@@ -56,7 +63,8 @@ std::string Server::ft_read_file_simple(const std::string& file_path)
 	
 	// 1. Ouvrir le fichier en lecture
 	std::ifstream file(file_path.c_str());
-	if (!file.is_open()) {
+	if (!file.is_open())
+	{
 		std::cout << "Error: Cannot open file " << file_path << std::endl;
 		return "";  // Retourner chaîne vide si échec
 	}
@@ -65,7 +73,8 @@ std::string Server::ft_read_file_simple(const std::string& file_path)
 	std::string content;
 	std::string line;
 	
-	while (std::getline(file, line)) {
+	while (std::getline(file, line))
+	{
 		content += line + "\n";  // Reconstituer le fichier
 	}
 	

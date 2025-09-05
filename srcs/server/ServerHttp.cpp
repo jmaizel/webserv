@@ -115,25 +115,25 @@ std::string Server::ft_serve_static_file_with_config(const std::string& uri)
 	
 	// 3. Vérifier si c'est un script CGI
 	if (file_path.length() > 3 && file_path.substr(file_path.length() - 3) == ".py")
-{
-    std::cout << "Executing CGI script: " << file_path << std::endl;
-    
-    // Créer un HttpRequest basique pour le CGI
-    HttpRequest cgi_request;
-    cgi_request.method = "GET";
-    cgi_request.uri = uri;
-    cgi_request.version = "HTTP/1.1";
-    cgi_request.is_valid = true;
-    
-    // Ajouter la query string si elle existe
-    size_t query_pos = uri.find('?');
-    if (query_pos != std::string::npos)
-    {
-        cgi_request.query_string = uri.substr(query_pos + 1);
-    }
-    
-    return ft_execute_cgi(file_path, cgi_request);
-}
+	{
+    		std::cout << "Executing CGI script: " << file_path << std::endl;
+		
+    	// Créer un HttpRequest basique pour le CGI
+    	HttpRequest cgi_request;
+    	cgi_request.method = "GET";
+    	cgi_request.uri = uri;
+    	cgi_request.version = "HTTP/1.1";
+    	cgi_request.is_valid = true;
+		
+    	// Ajouter la query string si elle existe
+    	size_t query_pos = uri.find('?');
+    	if (query_pos != std::string::npos)
+    	{
+    	    cgi_request.query_string = uri.substr(query_pos + 1);
+    	}
+	
+    	return ft_execute_cgi(file_path, cgi_request);
+	}
 	
 	// 4. Lire le contenu du fichier
 	std::string file_content = ft_read_file_simple(file_path);
@@ -141,8 +141,14 @@ std::string Server::ft_serve_static_file_with_config(const std::string& uri)
 	// 5. Vérifier si le fichier existe
 	if (file_content.empty())
 	{
-		std::cout << "File not found: " << file_path << std::endl;
-		return ft_build_404_response();
+		if (errno == EACCES || errno == EISDIR)
+        	return ft_build_403_response(); 	
+		else if (errno == ENOENT)
+        	return ft_build_404_response();
+		else
+		{
+        	return ft_build_500_response();
+    	}
 	}
 	
 	// 6. Déterminer le Content-Type selon l'extension
