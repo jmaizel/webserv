@@ -57,7 +57,7 @@ class Server
 		void			ft_disconnect_client(int client_fd);
 		
 		// Methodes HTTP (ServerHttp.cpp)
-		std::string 	ft_handle_delete(const std::string& uri);
+		std::string 	ft_handle_delete(const std::string, const std::map<std::string, std::string>& params);
 		std::string		ft_handle_request_simple(const std::string& uri);  // Ancienne méthode
 		std::string		ft_handle_request_with_config(const std::string& method, const std::string& uri, const std::string& body);
 		

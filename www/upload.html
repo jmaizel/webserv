@@ -123,6 +123,20 @@
         <button type="submit" class="submit-btn">💾 Créer le fichier</button>
       </form>
     </div>
+
+    <!-- Delete file -->
+    <div class="card">
+      <div class="subtitle">🗑️ Supprimer un fichier</div>
+      <form action="/uploads" method="POST">
+        <!-- method override: turn POST into DELETE -->
+        <input type="hidden" name="_method" value="DELETE">
+        <div class="form-group">
+          <label for="deletefile">Nom du fichier à supprimer :</label>
+          <input type="text" id="deletefile" name="filename" placeholder="exemple.txt" required>
+        </div>
+        <button type="submit" class="submit-btn">❌ Supprimer</button>
+      </form>
+    </div>
   </div>
 </body>
 </html>

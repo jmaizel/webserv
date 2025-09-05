@@ -142,7 +142,7 @@ std::string Server::ft_handle_upload(const std::map<std::string, std::string>& p
     
     if (file_it == params.end())
 	{
-        return ft_build_post_success_response("Upload simulé - aucun fichier spécifié");
+        return ft_build_post_success_response("Upload simule - aucun fichier specifie");
     }
     
     std::string filename = file_it->second;
@@ -185,7 +185,7 @@ std::string Server::ft_handle_upload(const std::map<std::string, std::string>& p
     file1 << "<li><a href=\"/uploads/" << filename << "\">" << filename << "</a></li>\n";
     file1.close();
     
-    std::string success_msg = "Fichier '" + filename + "' uploadé avec succès";
+    std::string success_msg = "File '" + filename + "' uploaded";
     return ft_build_post_success_response(success_msg);
 }
 
@@ -240,15 +240,17 @@ std::string Server::ft_handle_contact(const std::map<std::string, std::string>& 
 	return ft_build_post_success_response(response_msg);
 }
 
+
 // Construire une réponse de succès pour POST
 std::string Server::ft_build_post_success_response(const std::string& message)
 {
 	// Créer le body HTML
+	//CAN BE OTHER THAN 200
 	std::string body = "<!DOCTYPE html>\n<html>\n<head><title>Success</title></head>\n";
 	body += "<body style='font-family: Arial; text-align: center; margin-top: 50px;'>\n";
-	body += "<h1>✓ Succès</h1>\n";
+	body += "<h1>200 - Success!</h1>\n";
 	body += "<p>" + message + "</p>\n";
-	body += "<p><a href='/'>Retour à l'accueil</a></p>\n";
+	body += "<p><a href='/'>Retour a l'accueil</a></p>\n";
 	body += "<hr>\n<p><em>WebServ/1.0 - " + ft_get_timestamp() + "</em></p>\n";
 	body += "</body>\n</html>";
 	
@@ -257,6 +259,7 @@ std::string Server::ft_build_post_success_response(const std::string& message)
 	oss << body.length();
 	
 	// Construire la réponse HTTP
+	//CAN BE OTHER THAN 200!!
 	std::string response = "HTTP/1.1 200 OK\r\n";
 	response += "Content-Type: text/html\r\n";
 	response += "Content-Length: " + oss.str() + "\r\n";

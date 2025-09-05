@@ -50,11 +50,34 @@ void Server::ft_accept_new_client(void)
 	std::cout << "New client connected: " << client_fd << std::endl;
 }
 
-std::string Server::ft_handle_delete(const std::string& uri) {
-    // 1. Convertir l'URI en chemin local (à adapter selon ton root)
-    std::string path = "./" + uri;
+std::string Server::ft_handle_delete(const std::string uri, const std::map<std::string, std::string>& params)
+{
+	std::map<std::string, std::string>::const_iterator it;
 
-    // 2. Vérifier si le fichier existe
+	it = params.find("filename");
+
+	if (it == params.end())
+	{
+		//wrong delete request 
+    	return ft_build_400_response();
+	}
+	//dont touch source files (client should't be able to delete source files)
+	//but can delete www
+	if (uri == "/srcs" || uri == "/includes")
+	{
+		return ft_build_403_response(); 	
+	}
+	std::string path(it->second);
+	if (path.find_first_of("/") != std::string::npos)
+	{
+		//so the client can't do some dodgy directory changing 
+		return ft_build_400_response();
+	}
+	path = "www" + uri + "/" + path;
+
+	std::cout << "DELETE : " << path << std::endl;
+
+    //Vérifier si le fichier existe
     struct stat st;
     if (stat(path.c_str(), &st) != 0)
 	{
@@ -68,19 +91,21 @@ std::string Server::ft_handle_delete(const std::string& uri) {
     	}
     }
 
-    // 3. Vérifier que c'est un fichier (pas un dossier)
+    //Vérifier que c'est un fichier (pas un dossier)
     if (S_ISDIR(st.st_mode))
 	{
         return ft_build_403_response();
     }
 
-    // 4. Essayer de supprimer le fichier
+    //Essayer de supprimer le fichier
 	//CAN I USE REMOVE/UNLINK?
     if (remove(path.c_str()) == 0)
 	{
-		//DONT KNOW WHAT TO PUT
-        return ft_build_success_response("was removed", " yayyy");
-    } 
+		std::string success_message = "file : " + path + " was removed!";
+		return ft_build_post_success_response(success_message);
+		//SI CA A FONCTIONNER FAUT SUPPRIMER DU FICHIER FILES!!
+		//To do	
+	} 
 	else
 	{
         return ft_build_500_response();

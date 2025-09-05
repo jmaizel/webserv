@@ -44,10 +44,12 @@ std::string Server::ft_handle_request_with_config(const std::string& method, con
 	{
 		return ft_handle_post_request_with_config(uri, body);
 	}
+	/* NOT needed! DELETE is diguised as POST
 	else if (method == "DELETE")
 	{
 		return ft_handle_delete(uri);
 	}
+	*/
 	else
 	{
 		return ft_build_405_response();
@@ -81,6 +83,13 @@ std::string Server::ft_handle_post_request_with_config(const std::string& uri, c
 		std::cout << "  " << it->first << " = " << it->second << std::endl;
 	}
 	
+	//DELETE functions is disguised as a POST
+	if (post_params.find("_method") != post_params.end() && post_params["_method"] == "DELETE")
+	{
+		//deletes the file pointed by uri
+    	return ft_handle_delete(uri, post_params);
+	}
+
 	// 4. Router selon l'URI
 	if (uri == "/login")
 	{
