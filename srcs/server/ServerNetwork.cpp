@@ -56,27 +56,34 @@ std::string Server::ft_handle_delete(const std::string& uri) {
 
     // 2. Vérifier si le fichier existe
     struct stat st;
-    if (stat(path.c_str(), &st) != 0) {
-        // Fichier inexistant
-        return "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+    if (stat(path.c_str(), &st) != 0)
+	{
+		if (errno == EACCES)
+        	return ft_build_403_response(); 	
+		else if (errno == ENOENT)
+        	return ft_build_404_response();
+		else
+		{
+        	return ft_build_500_response();
+    	}
     }
 
     // 3. Vérifier que c'est un fichier (pas un dossier)
-    if (S_ISDIR(st.st_mode)) {
-        return "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
+    if (S_ISDIR(st.st_mode))
+	{
+        return ft_build_403_response();
     }
 
     // 4. Essayer de supprimer le fichier
-    if (remove(path.c_str()) == 0) {
-        // Succès
-        return "HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n";
-    } else {
-        // Erreur système (permissions, etc.)
-        std::ostringstream oss;
-        oss << "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n";
-        oss << "Content-Length: " << strlen(strerror(errno)) << "\r\n\r\n";
-        oss << strerror(errno);
-        return oss.str();
+	//CAN I USE REMOVE/UNLINK?
+    if (remove(path.c_str()) == 0)
+	{
+		//DONT KNOW WHAT TO PUT
+        return ft_build_success_response("was removed", " yayyy");
+    } 
+	else
+	{
+        return ft_build_500_response();
     }
 }
 
