@@ -30,7 +30,8 @@ SERVER_SRCS = server/Server.cpp \
               server/ServerHttp.cpp \
               server/ServerFiles.cpp \
               server/ServerConfigMethods.cpp \
-              server/ServerHttpPost.cpp
+              server/ServerHttpPost.cpp \
+			  server/Status.cpp
 
 CONFIG_SRCS = parsing/Parser.cpp
 
