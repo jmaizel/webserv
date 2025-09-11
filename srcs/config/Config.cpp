@@ -52,6 +52,7 @@ ServerBloc::~ServerBloc()
 {
 
 }
+
 void    ServerBloc::print()
 {
     std::cout << listen << "\n" << name << "\n" << root << "\n" << index <<  "\n" << client_max_body_size << "\n" << autoindex << std::endl;;

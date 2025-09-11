@@ -136,7 +136,7 @@ int Server::get_server_fd(void) const
 int Server::get_last_client_fd(void) const
 {
     if (_client_fds.empty())
-        return -1;
+        return (-1);
     return _client_fds.back();
 }
 
@@ -159,30 +159,32 @@ void Server::accept_new_client(void)
 
     int client_fd = accept(_server_fd, (struct sockaddr*)&client_addr, &client_len);
     if (client_fd < 0)
-        return; // Pas de client à accepter
+        return; //no clients to accept
 
-    // Rendre le client non-bloquant
+    //make the client non blocking
     if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0)
     {
         close(client_fd);
         return;
     }
 
-    // Ajouter à notre surveillance
+    //add to clients in the server
     FD_SET(client_fd, &_master_fds);
     _client_fds.push_back(client_fd);
     
     if (client_fd > _max_fd)
         _max_fd = client_fd;
 
-    std::cout << "New client connected to server " << _name << " (fd: " << client_fd << ")" << std::endl;
+    std::cout << "New client connected to server " << _name << std::endl;
 }
 
 void Server::handle_client_request(int client_fd)
 {
+    //what if i receive a bigger size than 4096????????????????????????????????????????
     char buffer[4096];
     ssize_t bytes_read = recv(client_fd, buffer, 4095, 0);
     
+    //if recv failed or nothing to read
     if (bytes_read <= 0)
     {
         disconnect_client(client_fd);
@@ -190,20 +192,22 @@ void Server::handle_client_request(int client_fd)
     }
 
     buffer[bytes_read] = '\0';
-    std::cout << "Received " << bytes_read << " bytes from client " << client_fd << std::endl;
+    std::cout << "Received: " << buffer << std::endl;
 
-    // Pour l'instant, juste une réponse simple
-    std::ostringstream oss;
-    oss << _listen;
-    
-    std::string response = "HTTP/1.1 200 OK\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Content-Length: 88\r\n";
-    response += "Connection: close\r\n";
-    response += "\r\n";
-    response += "<html><body><h1>Hello from " + _name + ":" + oss.str() + "</h1></body></html>";
+    //create a http request object
+    HttpRequest req;
+    //parse the request based on the buffer
+    req.parse(buffer);
+    req.print();
 
-    send(client_fd, response.c_str(), response.length(), 0);
+    //create a http response object
+    HttpResponse res;
+    //parse the response based on the request
+    //res.parse(req);
+
+    //std::string response = res.toStr();
+
+    //send(client_fd, response.c_str(), response.length(), 0);
     disconnect_client(client_fd);
 }
 
@@ -212,7 +216,7 @@ void Server::disconnect_client(int client_fd)
     close(client_fd);
     FD_CLR(client_fd, &_master_fds);
     
-    //Retirer de la liste des clients
+    //remove from client list
     size_t i = 0;
     while (i < _client_fds.size())
     {
@@ -224,5 +228,5 @@ void Server::disconnect_client(int client_fd)
         i++;
     }
     
-    std::cout << "Client " << client_fd << " disconnected from server " << _name << std::endl;
+    std::cout << "Client " << " disconnected from server " << _name << std::endl;
 }

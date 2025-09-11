@@ -10,4 +10,40 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "../../includes/main.hpp"
 
+/*  TEMPLATE
+
+first line  HTTP/1.1 200 OK\r\n
+header      Content-Type: text/html\r\n
+header      Content-Length: 32\r\n
+header      Connection: close\r\n
+\r\n
+body        <html><h1>Hello World</h1></html>
+
+*/
+
+HttpResponse::HttpResponse()
+{
+
+}
+
+HttpResponse::HttpResponse(const HttpRequest &copy)
+{
+
+}
+
+HttpResponse::~HttpResponse()
+{
+
+}
+
+void    HttpResponse::parse(const HttpRequest &req)
+{
+    
+}
+
+std::string HttpResponse::toStr()
+{
+    return (" ");
+}

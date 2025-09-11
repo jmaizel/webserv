@@ -16,7 +16,9 @@ SRC =	srcs/main.cpp \
 		srcs/config/Config.cpp \
 		srcs/server/Server.cpp \
 		srcs/server/ServerMonitor.cpp \
-		srcs/utils/str_utils.cpp
+		srcs/utils/str_utils.cpp \
+		srcs/http/HttpRequest.cpp \
+		srcs/http/HttpResponse.cpp
 
 OBJ = ${SRC:.cpp=.o}
 CC = c++ -fsanitize=address -g

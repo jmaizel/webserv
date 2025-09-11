@@ -12,8 +12,8 @@
 
 #pragma once
 
-#include "Client.hpp"
 #include "HttpResponse.hpp"
+#include "HttpRequest.hpp"
 #include "Server.hpp"
 #include "ServerMonitor.hpp"
 #include "Config.hpp"
@@ -28,3 +28,4 @@ std::vector<std::string>    ft_split(const std::string &line, const std::string 
 int                         get_closing_bracket_index(std::string &str);
 std::string                 commenttrim(std::string &str);
 size_t                      safe_atosize_t(const std::string &str);
+std::string                 trimmer(std::string &str);

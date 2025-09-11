@@ -41,7 +41,7 @@ int main (int argc, char **argv)
         std::cout << std::endl;
         webserv.init_servers();
         std::cout << std::endl;
-        std::cout << "\033[31mRUNNING SERVERS...\033[0m" << std::endl;
+        std::cout << "\033[31mAWAITING CLIENT CONNECTIONS..\033[0m." << std::endl;
         std::cout << std::endl;
         webserv.run();
         std::cout << std::endl;

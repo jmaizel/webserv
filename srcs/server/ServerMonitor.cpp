@@ -17,9 +17,9 @@ ServerMonitor::ServerMonitor()
 
 }
 
-ServerMonitor::ServerMonitor(std::string &config) : _config(config)
+ServerMonitor::ServerMonitor(std::string &config) : _config(config) , _max_fd(0)
 {
-
+    FD_ZERO(&(this->_master_fds));
 }
 
 
@@ -47,6 +47,33 @@ void    ServerMonitor::addServer(Server server)
     //add the fd aswell
 }
 
+void    ServerMonitor::init_servers()
+{
+    //init the sockets (FD) of each servers
+    for (size_t i = 0; i < this->_servers.size(); i++)
+    {
+        try { (this->_servers[i]).init();}
+        catch (std::exception &e) {throw;}
+    }
+    
+    //add all the servers fd's in master_fds
+    size_t i = 0;
+    while (i < _servers.size())
+    {
+        //get the fd from the server
+        int server_fd = _servers[i].get_server_fd();
+
+        //add it to the set
+        FD_SET(server_fd, &(this->_master_fds));
+
+        //track the biggest fd
+        if (server_fd > this->_max_fd)
+            this->_max_fd = server_fd;
+        i++;
+    }
+}
+
+
 void ServerMonitor::run()
 {
     if (_servers.empty())
@@ -55,81 +82,57 @@ void ServerMonitor::run()
         return;
     }
 
-    std::cout << "Starting multi-server with " << _servers.size() << " server(s)..." << std::endl;
+    std::cout << "Starting multi-server with " << _servers.size()
+              << " listening socket(s)..." << std::endl;
 
-    // Créer le fd_set principal pour tous les serveurs
-    fd_set master_fds, read_fds;
-    int max_fd = 0;
-    
-    FD_ZERO(&master_fds);
-    
-    // Ajouter tous les serveurs au fd_set
-    size_t i = 0;
-    while (i < _servers.size())
-    {
-        int server_fd = _servers[i].get_server_fd();
-        FD_SET(server_fd, &master_fds);
-        if (server_fd > max_fd)
-            max_fd = server_fd;
-        i++;
-    }
+    fd_set read_fds;
 
-    std::cout << "⚡ Multi-server running... Press Ctrl+C to stop" << std::endl;
-
-    // Boucle principale
+    //main loop
     while (true)
     {
-        read_fds = master_fds;
-        
-        if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) < 0)
-        {
-            std::cerr << "❌ Select error" << std::endl;
-            break;
-        }
+        read_fds = this->_master_fds; //copy master into read_fds
 
-        // Vérifier chaque serveur et ses clients
-        i = 0;
-        while (i < _servers.size())
+        std::cout << "\nWaiting for clients..." << std::endl;
+
+        int activity = select(this->_max_fd + 1, &read_fds, NULL, NULL, NULL);
+        if (activity < 0)
+            throw std::runtime_error("Select Error");
+
+        //loop through servers
+        for (size_t i = 0; i < _servers.size(); i++)
         {
             int server_fd = _servers[i].get_server_fd();
-            
-            // Vérifier si ce serveur a une nouvelle connexion
+
+            //new connection on this server
             if (FD_ISSET(server_fd, &read_fds))
             {
                 _servers[i].accept_new_client();
-                
-                // Ajouter le nouveau client au master_fds
+
                 int new_client = _servers[i].get_last_client_fd();
                 if (new_client > 0)
                 {
-                    FD_SET(new_client, &master_fds);
-                    if (new_client > max_fd)
-                        max_fd = new_client;
+                    FD_SET(new_client, &(this->_master_fds));
+                    if (new_client > this->_max_fd)
+                        this->_max_fd = new_client;        
                 }
             }
-            
-            // Vérifier tous les file descriptors pour les clients de ce serveur
-            int fd = 0;
-            while (fd <= max_fd)
+
+            //loop through all potential client fds
+            for (int fd = 0; fd <= this->_max_fd; fd++)
             {
                 if (FD_ISSET(fd, &read_fds) && fd != server_fd && _servers[i].is_client_fd(fd))
                 {
                     _servers[i].handle_client_request(fd);
-                    
-                    // Si le client s'est déconnecté, le retirer du master_fds
+
                     if (!_servers[i].is_client_fd(fd))
                     {
-                        FD_CLR(fd, &master_fds);
+                        FD_CLR(fd, &(this->_master_fds));
                     }
                 }
-                fd++;
             }
-            
-            i++;
         }
     }
 }
-
 
 LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string &pathi, size_t *i)
 {
@@ -262,15 +265,6 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
     return (sbloc);
 }
 
-void    ServerMonitor::init_servers()
-{
-    for (size_t i = 0; i < this->_servers.size(); i++)
-    {
-        try { (this->_servers[i]).init();}
-        catch (std::exception &e) {throw;}
-    }
-}
-
 bool    is_valid_server_bloc(ServerBloc &sbloc)
 {
     //if there are no root or no listen ->error
@@ -281,23 +275,7 @@ bool    is_valid_server_bloc(ServerBloc &sbloc)
     return (true);
 }
 
-
-std::string trimmer(std::string &str)
-{
-    std::string                 trimmed;
-
-    //all comments supressed
-    trimmed = commenttrim(str);
-    //trims leading and trailing whitespaces
-    trimmed = strtrim(trimmed);
-    //allows only one space between elements of a line
-    trimmed = spacetrim(trimmed);
-    //allows no spaces between brackets
-    trimmed = brackettrim(trimmed);
-    return (trimmed);
-}
-
-bool valid_semicolons(const std::vector<std::string> &tokens)
+bool ServerMonitor::valid_semicolons(const std::vector<std::string> &tokens)
 {
     for (size_t i = 0; i < tokens.size(); ++i)
     {
@@ -335,8 +313,7 @@ bool valid_semicolons(const std::vector<std::string> &tokens)
     return true;
 }
 
-
-bool valid_brackets(const std::vector<std::string> &tokens)
+bool ServerMonitor::valid_brackets(const std::vector<std::string> &tokens)
 {
     //checking brackets count
     int depth = 0;
@@ -385,8 +362,7 @@ bool valid_brackets(const std::vector<std::string> &tokens)
     return true;
 }
 
-
-std::vector<std::string>    tokenize(const std::string &buffer)
+std::vector<std::string>    ServerMonitor::tokenize(const std::string &buffer)
 {
     std::vector<std::string>    tokens;
     std::string                 current;

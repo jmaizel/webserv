@@ -12,6 +12,23 @@
 
 #include "../../includes/main.hpp"
 
+
+std::string trimmer(std::string &str)
+{
+    std::string                 trimmed;
+
+    //all comments supressed
+    trimmed = commenttrim(str);
+    //trims leading and trailing whitespaces
+    trimmed = strtrim(trimmed);
+    //allows only one space between elements of a line
+    trimmed = spacetrim(trimmed);
+    //allows no spaces between brackets
+    trimmed = brackettrim(trimmed);
+    return (trimmed);
+}
+
+
 std::vector<std::string> ft_split(const std::string &line, const std::string &separators)
 {
     std::vector<std::string> tokens;
