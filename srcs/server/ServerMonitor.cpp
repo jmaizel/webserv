@@ -187,7 +187,8 @@ void    ServerMonitor::init_servers()
 {
     for (size_t i = 0; i < this->_servers.size(); i++)
     {
-        (this->_servers[i]).init();
+        try { (this->_servers[i]).init();}
+        catch (std::exception &e) {throw;}
     }
 }
 

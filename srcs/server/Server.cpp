@@ -83,14 +83,14 @@ void Server::init()
     if (bind(_server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
     {
         close(_server_fd);
-        throw std::runtime_error("bind() failed (port " + std::to_string(_listen) + ")");
+        throw std::runtime_error("bind failed for port " + std::to_string(_listen));
     }
 
     //start listening -> port opened
     if (listen(_server_fd, SOMAXCONN) < 0)
     {
         close(_server_fd);
-        throw std::runtime_error("listen() failed");
+        throw std::runtime_error("listen failed");
     }
 
     //initialize fd_sets
