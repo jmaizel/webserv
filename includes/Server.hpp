@@ -58,6 +58,15 @@ class Server
 		std::vector<int>	_client_fds;
 
     public:
+    // À ajouter dans la section public: de Server.hpp
+// Méthodes pour multi-serveurs (ajouter après tes méthodes existantes)
+int     get_server_fd(void) const;
+int     get_last_client_fd(void) const;
+bool    is_client_fd(int fd) const;
+void    accept_new_client(void);
+void    handle_client_request(int client_fd);
+void    disconnect_client(int client_fd);
+
         Server();
         //Server(const Server& other);
         Server(ServerBloc &bloc);

@@ -6,7 +6,7 @@
 /*   By: hsorel <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/08 19:39:36 by hsorel            #+#    #+#             */
-/*   Updated: 2025/09/08 19:39:37 by hsorel           ###   ########.fr       */
+/*   Updated: 2025/09/11 18:00:00 by hsorel           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,13 +31,11 @@ Server::Server()
     _client_fds.clear();
 }
 
-
-
 Server::Server(ServerBloc &s)
     : _root(s.root),
     _name(s.name),
     _index(s.index),
-    _autoindex(false),
+    _autoindex(s.autoindex),
     _allowed_methods(s.allowed_methods),
     _client_max_body_size(s.client_max_body_size),
     _locations(s.locations),
@@ -52,76 +50,204 @@ Server::Server(ServerBloc &s)
     _client_fds.clear();
 }
 
-
 Server::~Server()
 {
-
+    if (_server_fd != -1)
+        close(_server_fd);
+    
+    // Fermer tous les clients
+    size_t i = 0;
+    while (i < _client_fds.size())
+    {
+        close(_client_fds[i]);
+        i++;
+    }
 }
 
 void Server::init()
 {
-    //creates a socket
+    std::cout << "🔧 Initializing server on port " << _listen << "..." << std::endl;
+    
+    // Créer le socket
     _server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (_server_fd < 0)
-        throw std::runtime_error("socket creation failure");
+        throw std::runtime_error("Socket creation failure");
 
-    //allows address reuse
+    // Permettre la réutilisation d'adresse
     int opt = 1;
     if (setsockopt(_server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
         close(_server_fd);
-        throw std::runtime_error("setsockopt failed");
+        throw std::runtime_error("Setsockopt failed");
     }
 
-    //fill address structure
+    // Rendre le socket non-bloquant
+    if (fcntl(_server_fd, F_SETFL, O_NONBLOCK) < 0)
+    {
+        close(_server_fd);
+        throw std::runtime_error("Fcntl failed");
+    }
+
+    // Configurer l'adresse
     std::memset(&_address, 0, sizeof(_address));
     _address.sin_family = AF_INET;
     _address.sin_addr.s_addr = INADDR_ANY;
     _address.sin_port = htons(_listen);
 
-    //binds socket to address
+    // Bind le socket à l'adresse
     if (bind(_server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
     {
         close(_server_fd);
-        throw std::runtime_error("bind failed for port " + std::to_string(_listen));
+        std::ostringstream oss;
+        oss << "Bind failed on port " << _listen;
+        throw std::runtime_error(oss.str());
     }
 
-    //start listening -> port opened
-    if (listen(_server_fd, SOMAXCONN) < 0)
+    // Mettre en écoute
+    if (listen(_server_fd, 128) < 0)
     {
         close(_server_fd);
-        throw std::runtime_error("listen failed");
+        throw std::runtime_error("Listen failed");
     }
 
-    //initialize fd_sets
-    FD_ZERO(&_read_fds);
-    FD_ZERO(&_write_fds);
-    FD_ZERO(&_master_fds);
+    // Ajouter au fd_set principal
     FD_SET(_server_fd, &_master_fds);
+    _max_fd = _server_fd;
 
-    //Track max fd
-    //_max_fd = _server_fd;
-
-    std::cout << "Server listening on port..." << _listen << std::endl;
+    std::cout << "✅ Server initialized on " << _name << ":" << _listen << std::endl;
 }
 
-
-void    Server::print()
+void Server::print()
 {
-    std::cout << "listen: " << this->_listen <<  std::endl;
-    std::cout << "name: " << this->_name <<  std::endl;
-    std::cout << "index: " << this->_index <<  std::endl;
-    std::cout << "allowed methods: ";
-    for (size_t i = 0 ; i < this->_allowed_methods.size(); ++i)
-        std::cout << this->_allowed_methods[i] << " ";
-    std::cout << std::endl;
-    std::cout << "max body size: " << this->_client_max_body_size <<  std::endl;
-    std::cout << "autoindex: " << this->_autoindex <<  std::endl;
-    std::map<std::string, LocationBloc>::iterator it;
-    for (it = this->_locations.begin() ; it != this->_locations.end(); ++it)
+    std::cout << "📋 Server Configuration:" << std::endl;
+    std::cout << "   Listen: " << _listen << std::endl;
+    std::cout << "   Name: " << _name << std::endl;
+    std::cout << "   Root: " << _root << std::endl;
+    std::cout << "   Index: " << _index << std::endl;
+    std::cout << "   Client max body size: " << _client_max_body_size << std::endl;
+    std::cout << "   Autoindex: " << (_autoindex ? "on" : "off") << std::endl;
+    
+    std::cout << "   Allowed methods: ";
+    size_t i = 0;
+    while (i < _allowed_methods.size())
     {
-        std::cout << "location : " << it->first << ": " << std::endl;
-        (it->second).print();
-        std::cout << std::endl;
+        std::cout << _allowed_methods[i];
+        if (i < _allowed_methods.size() - 1)
+            std::cout << ", ";
+        i++;
     }
+    std::cout << std::endl;
+    
+    std::cout << "   Locations (" << _locations.size() << "):" << std::endl;
+    std::map<std::string, LocationBloc>::iterator it = _locations.begin();
+    while (it != _locations.end())
+    {
+        std::cout << "     • " << it->first << std::endl;
+        std::cout << "       Root: " << (it->second.root.empty() ? "(default)" : it->second.root) << std::endl;
+        std::cout << "       Index: " << (it->second.index.empty() ? "(default)" : it->second.index) << std::endl;
+        std::cout << "       Autoindex: " << (it->second.autoindex ? "on" : "off") << std::endl;
+        std::cout << "       Max body size: " << it->second.client_max_body_size << " bytes" << std::endl;
+        ++it;
+    }
+}
+
+// Ajouter ces méthodes à la fin de ton Server.cpp existant
+
+int Server::get_server_fd(void) const
+{
+    return _server_fd;
+}
+
+int Server::get_last_client_fd(void) const
+{
+    if (_client_fds.empty())
+        return -1;
+    return _client_fds.back();
+}
+
+bool Server::is_client_fd(int fd) const
+{
+    size_t i = 0;
+    while (i < _client_fds.size())
+    {
+        if (_client_fds[i] == fd)
+            return true;
+        i++;
+    }
+    return false;
+}
+
+void Server::accept_new_client(void)
+{
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+
+    int client_fd = accept(_server_fd, (struct sockaddr*)&client_addr, &client_len);
+    if (client_fd < 0)
+        return; // Pas de client à accepter
+
+    // Rendre le client non-bloquant
+    if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0)
+    {
+        close(client_fd);
+        return;
+    }
+
+    // Ajouter à notre surveillance
+    FD_SET(client_fd, &_master_fds);
+    _client_fds.push_back(client_fd);
+    
+    if (client_fd > _max_fd)
+        _max_fd = client_fd;
+
+    std::cout << "New client connected to server " << _name << " (fd: " << client_fd << ")" << std::endl;
+}
+
+void Server::handle_client_request(int client_fd)
+{
+    char buffer[4096];
+    ssize_t bytes_read = recv(client_fd, buffer, 4095, 0);
+    
+    if (bytes_read <= 0)
+    {
+        disconnect_client(client_fd);
+        return;
+    }
+
+    buffer[bytes_read] = '\0';
+    std::cout << "Received " << bytes_read << " bytes from client " << client_fd << std::endl;
+
+    // Pour l'instant, juste une réponse simple
+    std::ostringstream oss;
+    oss << _listen;
+    
+    std::string response = "HTTP/1.1 200 OK\r\n";
+    response += "Content-Type: text/html\r\n";
+    response += "Content-Length: 88\r\n";
+    response += "Connection: close\r\n";
+    response += "\r\n";
+    response += "<html><body><h1>Hello from " + _name + ":" + oss.str() + "</h1></body></html>";
+
+    send(client_fd, response.c_str(), response.length(), 0);
+    disconnect_client(client_fd);
+}
+
+void Server::disconnect_client(int client_fd)
+{
+    close(client_fd);
+    FD_CLR(client_fd, &_master_fds);
+    
+    // Retirer de la liste des clients
+    size_t i = 0;
+    while (i < _client_fds.size())
+    {
+        if (_client_fds[i] == client_fd)
+        {
+            _client_fds.erase(_client_fds.begin() + i);
+            break;
+        }
+        i++;
+    }
+    
+    std::cout << "Client " << client_fd << " disconnected from server " << _name << std::endl;
 }
