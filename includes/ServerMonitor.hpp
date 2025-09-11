@@ -33,6 +33,7 @@ class ServerMonitor
         void    parse();
         void    run();
         void    print();
+        void    loop();
         void    init_servers();
 };
 

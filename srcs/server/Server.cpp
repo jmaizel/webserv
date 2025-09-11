@@ -79,7 +79,7 @@ void Server::init()
     _address.sin_addr.s_addr = INADDR_ANY;
     _address.sin_port = htons(_listen);
 
-    //binds socket to address
+    //binds socket to IP address
     if (bind(_server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
     {
         close(_server_fd);
