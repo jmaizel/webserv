@@ -64,6 +64,13 @@ class Server
         //Server& operator=(const Server& other);
         ~Server();
 
+		int     get_server_fd(void) const;
+		int     get_last_client_fd(void) const;
+		bool    is_client_fd(int fd) const;
+		void    accept_new_client(void);
+		void    handle_client_request(int client_fd);
+		void    disconnect_client(int client_fd);
+
         void    init();
         void    print();
 };

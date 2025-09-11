@@ -47,10 +47,89 @@ void    ServerMonitor::addServer(Server server)
     //add the fd aswell
 }
 
-void    ServerMonitor::run()
+void ServerMonitor::run()
 {
+    if (_servers.empty())
+    {
+        std::cerr << "No servers to run!" << std::endl;
+        return;
+    }
 
+    std::cout << "Starting multi-server with " << _servers.size() << " server(s)..." << std::endl;
+
+    // Créer le fd_set principal pour tous les serveurs
+    fd_set master_fds, read_fds;
+    int max_fd = 0;
+    
+    FD_ZERO(&master_fds);
+    
+    // Ajouter tous les serveurs au fd_set
+    size_t i = 0;
+    while (i < _servers.size())
+    {
+        int server_fd = _servers[i].get_server_fd();
+        FD_SET(server_fd, &master_fds);
+        if (server_fd > max_fd)
+            max_fd = server_fd;
+        i++;
+    }
+
+    std::cout << "⚡ Multi-server running... Press Ctrl+C to stop" << std::endl;
+
+    // Boucle principale
+    while (true)
+    {
+        read_fds = master_fds;
+        
+        if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) < 0)
+        {
+            std::cerr << "❌ Select error" << std::endl;
+            break;
+        }
+
+        // Vérifier chaque serveur et ses clients
+        i = 0;
+        while (i < _servers.size())
+        {
+            int server_fd = _servers[i].get_server_fd();
+            
+            // Vérifier si ce serveur a une nouvelle connexion
+            if (FD_ISSET(server_fd, &read_fds))
+            {
+                _servers[i].accept_new_client();
+                
+                // Ajouter le nouveau client au master_fds
+                int new_client = _servers[i].get_last_client_fd();
+                if (new_client > 0)
+                {
+                    FD_SET(new_client, &master_fds);
+                    if (new_client > max_fd)
+                        max_fd = new_client;
+                }
+            }
+            
+            // Vérifier tous les file descriptors pour les clients de ce serveur
+            int fd = 0;
+            while (fd <= max_fd)
+            {
+                if (FD_ISSET(fd, &read_fds) && fd != server_fd && _servers[i].is_client_fd(fd))
+                {
+                    _servers[i].handle_client_request(fd);
+                    
+                    // Si le client s'est déconnecté, le retirer du master_fds
+                    if (!_servers[i].is_client_fd(fd))
+                    {
+                        FD_CLR(fd, &master_fds);
+                    }
+                }
+                fd++;
+            }
+            
+            i++;
+        }
+    }
 }
+
 
 LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string &pathi, size_t *i)
 {
