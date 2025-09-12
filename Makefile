@@ -15,6 +15,10 @@ NAME = webserv
 SRC =	srcs/main.cpp \
 		srcs/config/Config.cpp \
 		srcs/server/Server.cpp \
+		srcs/server/DeleteHandler.cpp \
+		srcs/server/GetHandler.cpp \
+		srcs/server/PostHandler.cpp \
+		srcs/server/CgiHandler.cpp \
 		srcs/server/ServerMonitor.cpp \
 		srcs/utils/str_utils.cpp \
 		srcs/http/HttpRequest.cpp \

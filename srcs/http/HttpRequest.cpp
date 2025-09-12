@@ -39,19 +39,55 @@ HttpRequest::~HttpRequest()
 
 }
 
-void    HttpRequest::print()
+const std::string                         &HttpRequest::getMethod()const
 {
-    std::map<std::string, std::string>::iterator it;
+    return (this->_method);
+}
 
-    std::cout << "HTTP REQUEST:" << std::endl;
+const std::string                         &HttpRequest::getTarget()const
+{
+    return (this->_target);
+}
+
+const std::string                         &HttpRequest::getVersion()const
+{
+    return (this->_version);
+}
+
+const std::map<std::string, std::string>    &HttpRequest::getHeaders()const
+{
+    return (this->_headers);
+}
+
+const std::string                         &HttpRequest::getBody()const
+{
+    return (this->_body);
+}
+
+const int   &HttpRequest::getFlag()const
+{
+    return (this->_flag);
+}
+
+
+void    HttpRequest::print()const
+{
+    std::map<std::string, std::string>::const_iterator it;
+
+    std::cout << "=== HttpRequest ===" << std::endl;
+
     std::cout << this->_method << " " << this->_target << " " << this->_version << std::endl;
+
     for (it = this->_headers.begin(); it != this->_headers.end(); ++it)
         std::cout << it->first << ": " << it->second << std::endl;
+
     std::cout << this->_body << std::endl;
+    
+    std::cout << "====================" << std::endl;
 }
 
 //tokenizes based on /r/n. elements are seperated by spaces
-std::vector<std::string> tokenize(const std::string buffer)
+std::vector<std::string> HttpRequest::tokenize(const std::string buffer)const
 {
     std::string                 copy(buffer);
     std::string                 line;
@@ -72,7 +108,7 @@ std::vector<std::string> tokenize(const std::string buffer)
 }
 
 
-bool    is_valid_request()
+bool    HttpRequest::is_valid_request()const
 {
     //ToDo
     return (true);

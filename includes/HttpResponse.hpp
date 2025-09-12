@@ -29,11 +29,11 @@ body        <html><h1>Hello World</h1></html>
 class HttpResponse
 {
     private:
-        std::string                         version;
-        int                                 statusCode;
-        std::string                         reason;
-        std::map<std::string, std::string>  headers;
-        std::string                         body;
+        std::string                         _version;
+        int                                 _statusCode;
+        std::string                         _reason;
+        std::map<std::string, std::string>  _headers;
+        std::string                         _body;
 
 
     public:
@@ -44,7 +44,14 @@ class HttpResponse
         //destructors
         ~HttpResponse();
 
+        //setters
+        void    setVersion(const std::string &verion);
+        void    setStatusCode(const std::string &code);
+        void    setReason(const std::string &reason);
+        void    setBody(const std::string &body);
+        void    setHeaders(const std::string &version, const std::string &second);
+
         //methods
-        void        parse(const HttpRequest &req);
         std::string toStr();
+        void        print();
 };

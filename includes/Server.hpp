@@ -13,6 +13,8 @@
 #pragma once
 
 #include "Config.hpp"
+#include "HttpRequest.hpp"
+#include "HttpResponse.hpp"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -64,13 +66,23 @@ class Server
         //Server& operator=(const Server& other);
         ~Server();
 
+
+        //networking methods
 		int     get_server_fd(void) const;
 		int     get_last_client_fd(void) const;
 		bool    is_client_fd(int fd) const;
 		void    accept_new_client(void);
-		void    handle_client_request(int client_fd);
 		void    disconnect_client(int client_fd);
 
         void    init();
         void    print();
+
+        //response methods
+        void            handle_client_request(int client_fd);
+        HttpResponse    generate_response(HttpRequest &req);
+        HttpResponse    generate_invalid_request_response();
+        HttpResponse    generate_get_response(HttpRequest &req);
+        HttpResponse    generate_post_response(HttpRequest &req);
+        HttpResponse    generate_delete_response(HttpRequest &req);
+        HttpResponse    generate_method_not_implemented_response();
 };

@@ -178,6 +178,35 @@ void Server::accept_new_client(void)
     std::cout << "New client connected to server " << _name << std::endl;
 }
 
+HttpResponse    Server::generate_response(HttpRequest &req)
+{
+    HttpResponse    res;
+    std::string     method = req.getMethod();
+
+    //if request was malformed
+    if (req.getFlag() == 400)
+    {
+        res = generate_invalid_request_response();
+    }
+    if (method == "GET")
+    {
+        res = generate_get_response(req);
+    }
+    else if (method == "POST")
+    {
+        res = generate_post_response(req);
+    }
+    else if (method == "DELETE")
+    {
+        res = generate_delete_response(req);
+    }
+    else
+    {
+        res = generate_method_not_implemented_response();
+    }
+    return (res);
+}
+
 void Server::handle_client_request(int client_fd)
 {
     //what if i receive a bigger size than 4096????????????????????????????????????????
@@ -201,13 +230,14 @@ void Server::handle_client_request(int client_fd)
     req.print();
 
     //create a http response object
-    HttpResponse res;
-    //parse the response based on the request
-    //res.parse(req);
+    HttpResponse res = generate_response(req);
+    res.print();
+    
+    //get the actual string response
+    std::string response = res.toStr();
 
-    //std::string response = res.toStr();
-
-    //send(client_fd, response.c_str(), response.length(), 0);
+    //send the response to the client fd
+    send(client_fd, response.c_str(), response.length(), 0);
     disconnect_client(client_fd);
 }
 

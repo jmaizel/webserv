@@ -38,12 +38,63 @@ HttpResponse::~HttpResponse()
 
 }
 
-void    HttpResponse::parse(const HttpRequest &req)
+
+
+void    HttpResponse::setVersion(const std::string &version)
 {
-    
+    this->_version = version;
 }
+
+void    HttpResponse::setStatusCode(const std::string &code)
+{
+    this->_version = code;
+}
+void    HttpResponse::setReason(const std::string &reason)
+{
+    this->_version = reason;
+}
+
+void    HttpResponse::setBody(const std::string &body)
+{
+    this->_version = body;
+}
+
+void    HttpResponse::setHeaders(const std::string &first, const std::string &second)
+{
+    this->_headers[first] = second;
+}
+
+void HttpResponse::print()
+{
+    std::cout << "=== HttpResponse ===" << std::endl;
+
+    std::cout << this->_version << " " << this->_statusCode << " " << this->_reason << "\r\n";
+
+    for (std::map<std::string, std::string>::const_iterator it = this->_headers.begin(); it != this->_headers.end(); ++it)
+    {
+        std::cout << it->first << ": " << it->second << "\r\n";
+    }
+    std::cout << "\r\n";
+
+    std::cout << this->_body << std::endl;
+
+    std::cout << "====================" << std::endl;
+}
+
 
 std::string HttpResponse::toStr()
 {
+    std::map<std::string, std::string>::iterator    it;
+    std::ostringstream                              buffer;
+
+    //first line
+    buffer << this->_version << " " << this->_statusCode << " " << this->_reason << "\r\n";
+    //headers
+    for (it = this->_headers.begin(); it != this->_headers.end() ; ++it)
+        buffer << it->first << ": " << it->second << "\r\n";
+    //'\r\n' to finish off the headers
+    buffer << "\r\n";
+    //body
+    buffer << this->_body;
     return (" ");
 }

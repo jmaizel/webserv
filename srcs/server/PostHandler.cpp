@@ -10,4 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "../../includes/main.hpp"
 
+HttpResponse    Server::generate_post_response(HttpRequest &req)
+{
+    HttpResponse res;
+
+    return (res);
+
+}

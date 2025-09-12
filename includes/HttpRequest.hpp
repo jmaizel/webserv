@@ -14,6 +14,7 @@
 
 #include <iostream>
 #include <map>
+#include <vector>
 
 /*  TEMPLATE
 
@@ -38,6 +39,10 @@ class HttpRequest
         std::string                         _body;
         int                                 _flag;
 
+        //private methods
+        bool                        is_valid_request()const;
+        std::vector<std::string>    tokenize(const std::string buffer)const;
+
     public:
         //constructors
         HttpRequest();
@@ -46,7 +51,16 @@ class HttpRequest
         //destructors
         ~HttpRequest();
 
-        //method
-        void    parse(const std::string &buffer);
-        void    print();
+        //getters
+        const std::string                           &getMethod()const;
+        const std::string                           &getTarget()const;
+        const std::string                           &getVersion()const;
+        const std::map<std::string, std::string>    &getHeaders()const;
+        const std::string                           &getBody()const;
+        const int                                   &getFlag()const;
+
+
+        //public methods
+        void                        parse(const std::string &buffer);
+        void                        print()const;
 };

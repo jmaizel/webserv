@@ -1,13 +1,21 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   GetHandler.cpp                                     :+:      :+:    :+:   */
+/*   DeleteHandler.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: hsorel <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/09/08 19:41:30 by hsorel            #+#    #+#             */
-/*   Updated: 2025/09/08 19:41:31 by hsorel           ###   ########.fr       */
+/*   Created: 2025/09/08 19:43:14 by hsorel            #+#    #+#             */
+/*   Updated: 2025/09/08 19:43:15 by hsorel           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "../../includes/main.hpp"
 
+HttpResponse    Server::generate_delete_response(HttpRequest &req)
+{
+    HttpResponse res;
+
+    return (res);
+   
+}
