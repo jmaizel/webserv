@@ -76,13 +76,15 @@ class Server
 
         void    init();
         void    print();
+        void    shutdown();
 
         //response methods
         void            handle_client_request(int client_fd);
         HttpResponse    generate_response(HttpRequest &req);
-        HttpResponse    generate_invalid_request_response();
+        HttpResponse    generate_success_response(int code, const std::string &reason, const std::string &body);
+        HttpResponse    generate_autoindex_response(const std::string &path, const std::string &target);
         HttpResponse    generate_get_response(HttpRequest &req);
         HttpResponse    generate_post_response(HttpRequest &req);
         HttpResponse    generate_delete_response(HttpRequest &req);
-        HttpResponse    generate_method_not_implemented_response();
+        HttpResponse    generate_error_response(int code, const std::string &reason, const std::string &details);
 };

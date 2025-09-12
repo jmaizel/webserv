@@ -44,5 +44,9 @@ class ServerMonitor
         void    run();
         void    print();
         void    init_servers();
+
+        //special function and it's special variable
+        static void handle_sigint(int signum);
+        static int              _flag;
 };
 

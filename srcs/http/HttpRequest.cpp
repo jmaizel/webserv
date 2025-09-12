@@ -24,7 +24,7 @@ body(optional)  {"username":"harold","password":"42"}
 
 */
 
-HttpRequest::HttpRequest()
+HttpRequest::HttpRequest() : _version(""), _headers(), _body("")
 {
 
 }
@@ -82,7 +82,7 @@ void    HttpRequest::print()const
         std::cout << it->first << ": " << it->second << std::endl;
 
     std::cout << this->_body << std::endl;
-    
+
     std::cout << "====================" << std::endl;
 }
 

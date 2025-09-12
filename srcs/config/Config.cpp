@@ -14,7 +14,7 @@
 
 LocationBloc::LocationBloc() :
     path("/"),
-    root(""),
+    root("www/"),
     allowed_methods(1, "GET"),
     client_max_body_size(1048576),
     index("index.html"),

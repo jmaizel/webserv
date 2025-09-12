@@ -19,6 +19,8 @@
 #include "Config.hpp"
 #include <stdexcept>
 #include <limits>
+#include <sys/types.h>
+#include <dirent.h>
 
 std::string                 strtrim(std::string &str);
 std::string                 brackettrim(std::string &line);

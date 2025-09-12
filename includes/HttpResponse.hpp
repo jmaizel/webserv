@@ -46,7 +46,7 @@ class HttpResponse
 
         //setters
         void    setVersion(const std::string &verion);
-        void    setStatusCode(const std::string &code);
+        void    setStatusCode(int code);
         void    setReason(const std::string &reason);
         void    setBody(const std::string &body);
         void    setHeaders(const std::string &version, const std::string &second);

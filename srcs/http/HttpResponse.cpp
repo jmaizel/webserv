@@ -23,7 +23,7 @@ body        <html><h1>Hello World</h1></html>
 
 */
 
-HttpResponse::HttpResponse()
+HttpResponse::HttpResponse() : _version(""), _headers(), _statusCode(0), _reason(""), _body("")
 {
 
 }
@@ -45,18 +45,18 @@ void    HttpResponse::setVersion(const std::string &version)
     this->_version = version;
 }
 
-void    HttpResponse::setStatusCode(const std::string &code)
+void    HttpResponse::setStatusCode(int code)
 {
-    this->_version = code;
+    this->_statusCode = code;
 }
 void    HttpResponse::setReason(const std::string &reason)
 {
-    this->_version = reason;
+    this->_reason = reason;
 }
 
 void    HttpResponse::setBody(const std::string &body)
 {
-    this->_version = body;
+    this->_body = body;
 }
 
 void    HttpResponse::setHeaders(const std::string &first, const std::string &second)
@@ -96,5 +96,5 @@ std::string HttpResponse::toStr()
     buffer << "\r\n";
     //body
     buffer << this->_body;
-    return (" ");
+    return (buffer.str());
 }

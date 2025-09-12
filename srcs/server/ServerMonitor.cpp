@@ -12,6 +12,8 @@
 
 #include "../../includes/main.hpp"
 
+int ServerMonitor::_flag = 0;
+
 ServerMonitor::ServerMonitor()
 {
 
@@ -25,7 +27,11 @@ ServerMonitor::ServerMonitor(std::string &config) : _config(config) , _max_fd(0)
 
 ServerMonitor::~ServerMonitor()
 {
-
+    FD_ZERO(&_master_fds);
+    for (size_t i = 0; i < _servers.size(); i++)
+    {
+        _servers[i].shutdown(); // each Server closes its fds and clears them
+    }
 }
 
 void    ServerMonitor::print()
@@ -39,6 +45,12 @@ void    ServerMonitor::print()
         std::cout << "------------------------" << "\n" << std::endl;
     }
     std::cout << std::endl;
+}
+
+void ServerMonitor::handle_sigint(int signum)
+{
+    std::cout << "\nSIGINT received, shutting down servers...\n";
+    ServerMonitor::_flag = -1;
 }
 
 void    ServerMonitor::addServer(Server server)
@@ -82,19 +94,21 @@ void ServerMonitor::run()
         return;
     }
 
-    std::cout << "Starting multi-server with " << _servers.size()
-              << " listening socket(s)..." << std::endl;
+    std::cout << "Starting server(s) with " << _servers.size() << " listening socket(s)..." << std::endl;
 
     fd_set read_fds;
 
     //main loop
-    while (true)
+    while (ServerMonitor::_flag == 0)
     {
         read_fds = this->_master_fds; //copy master into read_fds
 
         std::cout << "\nWaiting for clients..." << std::endl;
 
         int activity = select(this->_max_fd + 1, &read_fds, NULL, NULL, NULL);
+        //for signal handling
+        if (errno == EINTR)
+            break ;
         if (activity < 0)
             throw std::runtime_error("Select Error");
 

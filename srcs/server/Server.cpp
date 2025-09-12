@@ -55,8 +55,31 @@ Server::Server(ServerBloc &s)
 
 Server::~Server()
 {
-
+    this->shutdown();
 }
+
+void Server::shutdown()
+{
+    //closing all client sockets
+    for (size_t i = 0; i < _client_fds.size(); i++)
+    {
+        if (_client_fds[i] >= 0)
+            close(_client_fds[i]);
+    }
+    _client_fds.clear();
+
+    //closing listening socket
+    if (_server_fd >= 0)
+    {
+        close(_server_fd);
+        _server_fd = -1;
+    }
+
+    FD_ZERO(&_read_fds);
+    FD_ZERO(&_write_fds);
+    FD_ZERO(&_master_fds);
+}
+
 
 void Server::init()
 {
@@ -186,7 +209,7 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     //if request was malformed
     if (req.getFlag() == 400)
     {
-        res = generate_invalid_request_response();
+        res =  res = generate_error_response(400, "Bad Request", "The browser sent a request that this server could not understand");
     }
     if (method == "GET")
     {
@@ -202,7 +225,7 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     }
     else
     {
-        res = generate_method_not_implemented_response();
+        res = generate_error_response(501, "Not Implemented", "This method is not supported by the server");
     }
     return (res);
 }
@@ -257,6 +280,5 @@ void Server::disconnect_client(int client_fd)
         }
         i++;
     }
-    
     std::cout << "Client " << " disconnected from server " << _name << std::endl;
 }

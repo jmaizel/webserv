@@ -19,6 +19,7 @@ SRC =	srcs/main.cpp \
 		srcs/server/GetHandler.cpp \
 		srcs/server/PostHandler.cpp \
 		srcs/server/CgiHandler.cpp \
+		srcs/server/HandleErrors.cpp \
 		srcs/server/ServerMonitor.cpp \
 		srcs/utils/str_utils.cpp \
 		srcs/http/HttpRequest.cpp \

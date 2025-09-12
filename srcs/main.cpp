@@ -14,6 +14,9 @@
 
 int main (int argc, char **argv)
 {
+
+    signal(SIGINT, ServerMonitor::handle_sigint);
+    signal(SIGTERM, ServerMonitor::handle_sigint);
     
     if (argc < 2)
     {
