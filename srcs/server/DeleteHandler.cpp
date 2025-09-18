@@ -36,8 +36,16 @@ HttpResponse    Server::generate_delete_response(HttpRequest &req)
     //get the information on that location
 
     //WATCH OUT HERE WHAT TO DO IF THERE IS NOTHING
-    std::string location_path = path.substr(0, target.find_last_of('/'));
-    LocationBloc location = (this->_locations)[location_path];
+    std::string location_path = target.substr(0, target.find_last_of('/'));
+    std::cout << "HERE : " << target << " " << location_path << std::endl;
+    std::map<std::string, LocationBloc>::iterator it = this->_locations.find(location_path);
+
+    if (it == this->_locations.end())
+    {
+        generate_error_response(404, "Not Found", "The requested ressource does not exist");
+    }
+
+    LocationBloc location = it->second;
     std::cout << parent <<  std::endl;
     location.print();
 
@@ -65,7 +73,7 @@ HttpResponse    Server::generate_delete_response(HttpRequest &req)
 
     if (std::remove(path.c_str()))
     {
-        return generate_error_response(500, "Internal Server Error", "Unexpected Srver Error");
+        return generate_error_response(500, "Internal Server Error", "Unexpected Server Error");
     }
 
     //Build success response

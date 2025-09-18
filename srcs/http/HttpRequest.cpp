@@ -97,7 +97,8 @@ std::vector<std::string> HttpRequest::tokenize(const std::string buffer)const
     while ((pos = copy.find("\r\n")) != std::string::npos)
     {
         line = copy.substr(0, pos);
-        tokens.push_back(line);
+        if (!line.empty()) //if there is only "\r\n"
+            tokens.push_back(line);
         tokens.push_back(" ");
         copy.erase(0, pos + 2);
     }
@@ -129,7 +130,6 @@ void    HttpRequest::parse(const std::string &buffer)
         return ;
     }
     tokens = tokenize(buffer);
-
     //check if it is not empty
     if (tokens.size() < 2)
     {
@@ -169,7 +169,7 @@ void    HttpRequest::parse(const std::string &buffer)
             return ;
         }
         key = (tokens[i]).substr(0, pos);
-        value = (tokens[i]).substr(pos + 1);
+        value = (tokens[i]).substr(pos + 2);
         (this->_headers)[key] = value;
     }
 
