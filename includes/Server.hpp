@@ -59,6 +59,12 @@ class Server
 		int					_max_fd;
 		std::vector<int>	_client_fds;
 
+        //helpers
+        HttpResponse    handle_url_encoded(const std::string &body, const std::string &path);
+        HttpResponse    handle_json(const std::string &body, const std::string &path);
+        HttpResponse    handle_multipart(const std::string &body, const std::string &path, const std::string &content_type);
+        std::string     get_boundary(const std::string &content_type);
+
     public:
         Server();
         //Server(const Server& other);

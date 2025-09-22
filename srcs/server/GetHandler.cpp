@@ -72,52 +72,81 @@ HttpResponse    Server::generate_autoindex_response(const std::string &path, con
     return generate_success_response(200, "OK", body);
 }
 
-//some files browsers can
+//some files most browsers can manage
 std::string get_content_Type(std::string file)
 {
-    size_t      dot_pos;
-    std::string content_type;
+    size_t dot_pos;
     std::string ext;
 
-     //the last dot is the file extension
     dot_pos = file.find_last_of('.');
     if (dot_pos != std::string::npos)
         ext = file.substr(dot_pos);
-    else 
+    else
         ext = "";
 
     if (ext == ".html" || ext == ".htm")
-        content_type = "text/html";
+        return "text/html";
     else if (ext == ".css")
-        content_type = "text/css";
+        return "text/css";
     else if (ext == ".js")
-        content_type = "application/javascript";
+        return "application/javascript";
+    else if (ext == ".json")
+        return "application/json";
+    else if (ext == ".xml")
+        return "application/xml";
     else if (ext == ".txt")
-        content_type = "text/plain";
+        return "text/plain";
+
+    //images
     else if (ext == ".png")
-        content_type = "image/png";
+        return "image/png";
     else if (ext == ".gif")
-        content_type = "image/gif";
+        return "image/gif";
     else if (ext == ".ico")
-        content_type = "image/x-icon";
+        return "image/x-icon";
     else if (ext == ".jpeg" || ext == ".jpg")
-        content_type = "image/jpeg";
+        return "image/jpeg";
     else if (ext == ".webp")
-        content_type = "image/webp";
+        return "image/webp";
     else if (ext == ".svg")
-        content_type = "image/svg+xml";
+        return "image/svg+xml";
+
+    //documents
     else if (ext == ".pdf")
-        content_type = "application/pdf";
-    else if (ext == ".php")
-        content_type = "cgi/php";
-    else if (ext == ".py")
-        content_type = "cgi/py";
-    else if (ext == ".ico")
-        content_type = "image/x-icon";
-    else
-        content_type = "application/octet-stream"; //default (raw bytes)
-    return (content_type);
+        return "application/pdf";
+
+    //audio
+    else if (ext == ".mp3")
+        return "audio/mpeg";
+    else if (ext == ".ogg")
+        return "audio/ogg";
+    else if (ext == ".wav")
+        return "audio/wav";
+    else if (ext == ".flac")
+        return "audio/flac";
+
+    //video
+    else if (ext == ".mp4")
+        return "video/mp4";
+    else if (ext == ".webm")
+        return "video/webm";
+    else if (ext == ".ogv")
+        return "video/ogg";
+
+    //fonts
+    else if (ext == ".woff")
+        return "font/woff";
+    else if (ext == ".woff2")
+        return "font/woff2";
+    else if (ext == ".ttf")
+        return "font/ttf";
+    else if (ext == ".otf")
+        return "font/otf";
+
+    //default -> makes raw bytes
+    return "application/octet-stream";
 }
+
 
 HttpResponse Server::generate_get_response(HttpRequest &req)
 {
@@ -125,6 +154,9 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
 
     std::string target = req.getTarget();
     std::string path = "./www" + target;
+
+    std::map<std::string, LocationBloc>::iterator locIt;
+    LocationBloc location;
 
     struct stat st;
 
@@ -138,16 +170,28 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
             return generate_error_response(404, "Not Found", "The requested resource does not exist.");
         }
     }
-    //get the information on that location
-    LocationBloc location = (this->_locations)[target];
-
-    //check if GET is an accepted method in the location
-    if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
-        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method");
     
     //if it is a directory
     if (S_ISDIR(st.st_mode))
     {
+        //directories can be either dir or dir/. so normalize it
+        if (!target.empty() && target.find_last_of("/") != target.find_first_of("/") && target[target.size() - 1] == '/')
+            target.erase(target.size() - 1);
+
+        //get the location bloc
+        std::cout << target << std::endl;
+        locIt = this->_locations.find(target);
+        if (locIt == this->_locations.end())
+            return generate_error_response(404, "Not Found", "No matching location block");
+
+        location = locIt->second;
+
+        //DEBUG
+        location.print();
+
+        //check if GET is an accepted method in the location
+        if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
+            return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method");
         //look for the default page. if it exists then diplay that
         std::string index_path = path + location.index;
         struct stat st_index;
@@ -171,7 +215,27 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
         }
     }
 
-    //if it is a file
+    //static files
+
+    //find the parent directory
+    std::string parent_directory = target.substr(0, target.find_last_of("/"));
+
+    //get the location bloc
+     std::cout << parent_directory << std::endl;
+    this->print();
+    locIt = this->_locations.find(parent_directory);
+    if (locIt == this->_locations.end())
+        return generate_error_response(404, "Not Found", "No matching location block");
+    location = locIt->second;
+
+    //DEBUG
+    location.print();
+
+    //check if GET is an accepted method in the location
+    if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
+        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method");
+
+    //regular file
     if (!S_ISREG(st.st_mode))
     {
         return generate_error_response(403, "Forbidden", "Requested ressource is not regular file");
@@ -187,7 +251,7 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     //open failure
     if (fd < 0)
     {
-        return generate_error_response(500, "Internel Server Error", "File exists bu Read filed"); // unexpected error
+        return generate_error_response(500, "Internel Server Error", "File exists but read failed"); // unexpected error
     }
 
     std::string body;
