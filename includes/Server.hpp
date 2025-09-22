@@ -6,7 +6,7 @@
 /*   By: hsorel <marvin@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/08 17:48:36 by hsorel            #+#    #+#             */
-/*   Updated: 2025/09/08 17:48:37 by hsorel           ###   ########.fr       */
+/*   Updated: 2025/09/22 00:00:00 by hsorel           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,3 +88,22 @@ class Server
         HttpResponse    generate_delete_response(HttpRequest &req);
         HttpResponse    generate_error_response(int code, const std::string &reason, const std::string &details);
 };
+
+// ===== NOUVELLES DECLARATIONS CGI GLOBALES =====
+// Fonctions principales CGI
+HttpResponse ft_execute_cgi(const std::string& script_path, const HttpRequest& request, 
+                           const std::string& server_name, int server_port);
+bool ft_is_cgi_script(const std::string& file_path);
+
+// Fonctions helper pour CGI
+HttpResponse ft_build_cgi_response(const std::string& cgi_output);
+HttpResponse ft_parse_cgi_headers(HttpResponse response, const std::string& headers_part, const std::string& body_part);
+std::string ft_extract_query_string(const std::string& uri);
+std::string ft_get_interpreter(const std::string& script_path);
+
+// Fonctions pour l'exécution CGI
+void ft_execute_cgi_child(const std::string& script_path, const HttpRequest& request,
+                          const std::string& server_name, int server_port,
+                          int pipe_in[2], int pipe_out[2]);
+void ft_setup_cgi_environment(const HttpRequest& request, const std::string& server_name,
+                              int server_port, const std::string& script_path);
