@@ -66,7 +66,14 @@ void ft_setup_cgi_environment(const HttpRequest& request, const std::string& ser
     port_stream << server_port;
     setenv("SERVER_PORT", port_stream.str().c_str(), 1);
     
-    setenv("CONTENT_LENGTH", "0", 1);
+    std::ostringstream length_stream;
+    length_stream << request.getBody().length();
+    setenv("CONTENT_LENGTH", length_stream.str().c_str(), 1);
+
+    // Si POST, transmettre aussi le Content-Type
+    std::map<std::string, std::string> headers = request.getHeaders();
+    if (request.getMethod() == "POST" && headers.count("Content-Type"))
+        setenv("CONTENT_TYPE", headers["Content-Type"].c_str(), 1);
     setenv("SCRIPT_NAME", script_path.c_str(), 1);
     setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
     setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
@@ -158,16 +165,13 @@ HttpResponse ft_parse_cgi_headers(const std::string& headers_part, const std::st
 // Fonction pour construire une réponse HTTP à partir de la sortie CGI
 HttpResponse ft_build_cgi_response(const std::string& cgi_output)
 {
-    HttpResponse response;
-    
-    // Séparer headers et body
     size_t header_end = cgi_output.find("\r\n\r\n");
     if (header_end == std::string::npos)
         header_end = cgi_output.find("\n\n");
-    
+
     std::string headers_part;
     std::string body_part;
-    
+
     if (header_end != std::string::npos)
     {
         headers_part = cgi_output.substr(0, header_end);
@@ -181,18 +185,20 @@ HttpResponse ft_build_cgi_response(const std::string& cgi_output)
         body_part = cgi_output;
         headers_part = "Content-Type: text/html";
     }
-    
-    // Configurer la réponse de base
+
+    // Correction : parser les headers et les ajouter à response, sans écraser la version/status
+    HttpResponse response;
     response.setVersion("HTTP/1.1");
     response.setStatusCode(200);
     response.setReason("OK");
-    
-    // Parser les headers CGI
-    response = ft_parse_cgi_headers(headers_part, body_part);
-    
+
+    HttpResponse parsed = ft_parse_cgi_headers(headers_part, body_part);
+    // Utilisation de la méthode getHeaders()
+    std::map<std::string, std::string> hdrs = parsed.getHeaders();
+    for (std::map<std::string, std::string>::iterator it = hdrs.begin(); it != hdrs.end(); ++it)
+        response.setHeaders(it->first, it->second);
     // Définir le body
     response.setBody(body_part);
-    
     return response;
 }
 
@@ -221,12 +227,10 @@ HttpResponse ft_execute_cgi(const std::string& script_path, const HttpRequest& r
                            const std::string& server_name, int server_port)
 {
     int pipe_in[2], pipe_out[2];
-    
+
     if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1)
-    {
         return ft_create_cgi_error(500, "Internal Server Error", "Failed to create pipes for CGI execution");
-    }
-    
+
     pid_t pid = fork();
     if (pid == -1)
     {
@@ -236,35 +240,40 @@ HttpResponse ft_execute_cgi(const std::string& script_path, const HttpRequest& r
         close(pipe_out[1]);
         return ft_create_cgi_error(500, "Internal Server Error", "Failed to fork process for CGI execution");
     }
-    
+
     if (pid == 0)
     {
         ft_execute_cgi_child(script_path, request, server_name, server_port, pipe_in, pipe_out);
     }
-    
+
+    // Parent
     close(pipe_in[0]);
-    close(pipe_in[1]);
     close(pipe_out[1]);
-    
+
+    // Si POST, écrire le body dans le pipe
+    if (request.getMethod() == "POST" && !request.getBody().empty())
+    {
+        write(pipe_in[1], request.getBody().c_str(), request.getBody().length());
+    }
+    close(pipe_in[1]);
+
     std::string cgi_output;
     char buffer[4096];
     ssize_t bytes_read;
-    
+
     while ((bytes_read = read(pipe_out[0], buffer, sizeof(buffer) - 1)) > 0)
     {
         buffer[bytes_read] = '\0';
         cgi_output += buffer;
     }
-    
+
     close(pipe_out[0]);
-    
+
     int status;
     waitpid(pid, &status, 0);
-    
+
     if (WEXITSTATUS(status) != 0)
-    {
         return ft_create_cgi_error(500, "Internal Server Error", "CGI script execution failed");
-    }
-    
+
     return ft_build_cgi_response(cgi_output);
 }

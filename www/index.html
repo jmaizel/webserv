@@ -1,1 +1,30 @@
-BONJOUR JACOB
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Accueil WebServ</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 100vh; margin: 0; }
+        .container { max-width: 700px; margin: 60px auto; background: rgba(255,255,255,0.08); padding: 40px; border-radius: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.15); }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; text-align: center; }
+        ul { list-style: none; padding: 0; }
+        li { margin: 18px 0; }
+        a { color: #ffd700; font-size: 1.2rem; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .desc { color: #e0e0e0; font-size: 1rem; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bienvenue sur WebServ !</h1>
+        <p>Ce serveur web supporte les scripts Python CGI dynamiques. Testez les différentes méthodes HTTP :</p>
+        <ul>
+            <li><a href="/cgi-bin/hello.py">Accueil CGI (GET)</a> <span class="desc">→ Test GET, formulaire, navigation</span></li>
+            <li><a href="/cgi-bin/form.py">Formulaire POST</a> <span class="desc">→ Test POST, affiche les données envoyées</span></li>
+            <li><a href="/cgi-bin/delete.py">Suppression DELETE</a> <span class="desc">→ Démo suppression (simulée)</span></li>
+            <li><a href="/cgi-bin/info.py">Infos CGI</a> <span class="desc">→ Variables d'environnement et headers</span></li>
+            <li><a href="/cgi-bin/test.py">Liste & Test CGI</a> <span class="desc">→ Page de test GET/POST, navigation</span></li>
+        </ul>
+        <p style="margin-top:40px;text-align:center;">Projet <strong>WebServ</strong> - CGI Python - <em>Jacob</em></p>
+    </div>
+</body>
+</html>

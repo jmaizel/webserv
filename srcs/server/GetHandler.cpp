@@ -149,13 +149,9 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     std::cout << "Path exists and stat() succeeded" << std::endl;
 
     // Detecter et executer les scripts CGI
-    if (ft_is_cgi_script(path))
-    {
-        std::cout << "=== CGI SCRIPT DETECTED ===" << std::endl;
-        std::cout << "Executing CGI script: " << path << std::endl;
-        
-        // Executer le script CGI avec la bonne signature (4 arguments)
-        return ft_execute_cgi(path, req, "localhost", 8083);
+    if (ft_is_cgi_script(path)) {
+        // Exécution CGI : renvoyer la réponse du script
+        return ft_execute_cgi(path, req, this->_name, this->_listen);
     }
     else
     {
