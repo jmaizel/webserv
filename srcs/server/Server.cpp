@@ -232,7 +232,25 @@ HttpResponse    Server::generate_response(HttpRequest &req)
 
 void Server::handle_client_request(int client_fd)
 {
+    //ToDo
+
+    //add a timer for a 408! timeout
+    //get the headers after a certain amount of time
+    //quikly get the content length than i can start comparing -> send 415
+    //have a default buffer length 
+    //every buffer check if there are some shit inside -> send 400
     //what if i receive a bigger size than 4096????????????????????????????????????????
+
+    //start with getting the headers (set a certain amount of time)
+    //then parse the headers if something is wrong -> 400
+    //if too big -> 415
+    //if took too long -> 408
+    
+    //THEN get the rest of body
+    //set also a timer -> 408
+    //if too big -> 415
+    //then check for everything and validate it for treatment
+
     char buffer[4096];
     ssize_t bytes_read = recv(client_fd, buffer, 4095, 0);
     

@@ -276,7 +276,7 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
             //save file
             int fd = open((filename).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0)
-                return generate_error_response(500, " Internel Server Error", "File exists but read failed");
+                return generate_error_response(500, "Internel Server Error", "File exists but read failed");
             write(fd, (content).c_str(), (content).size());
             close(fd);
             content_received[filename] = content;
@@ -320,7 +320,7 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
 
         int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0)
-            return generate_error_response(500, " Internel Server Error", "File exists but read failed");
+            return generate_error_response(500, "Internel Server Error", "File exists but read failed");
 
         //if there is content write it
         it = sorted_body.find("content");
@@ -334,10 +334,7 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
     //random data
     else
     {
-        for (it = sorted_body.begin(); it != sorted_body.end(); ++it)
-        {
-            std::cout << it->first << " = " << it->second << std::endl;
-        }
+        return generate_error_response(400, "Bad Request", "Missing filename");
     }
     return generate_success_response(200, "OK", "Data proccessed successfully");
 }
@@ -356,12 +353,13 @@ HttpResponse    Server::handle_file_response(const std::string &target, const st
         parent_dir = target.substr(0, slash_pos);
 
     parent_dir_path = "./www" + parent_dir;
+
     //check if parent directory exist
     struct stat dir_st;
     if (stat(parent_dir_path.c_str(), &dir_st) < 0 || !S_ISDIR(dir_st.st_mode))
     {
         if (errno == EACCES)
-              return generate_error_response(403, "Forbidden", "You do not have permission to access this resource.");
+            return generate_error_response(403, "Forbidden", "You do not have permission to access this resource.");
         else
             return generate_error_response(404, "Not Found", "Parent directory does not exist");
     }
@@ -382,8 +380,7 @@ HttpResponse    Server::handle_file_response(const std::string &target, const st
 
     //get the location bloc of the parent directory
     LocationBloc location = it->second;
-    std::cout << "HERE " << file_path << " " <<  parent_dir << " " << parent_dir_path << std::endl;
-    location.print();
+    
     //check if POST is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method");
@@ -423,7 +420,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req)
     HttpResponse res;
 
     std::string target = req.getTarget();
-    std::string path = "./www" + target;
+    std::string path = "./www" + target + "/";
 
     struct stat st;
 
@@ -455,7 +452,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req)
         }
 
         //get the information on that location
-        std::map<std::string, LocationBloc>::iterator it1 = this->_locations.find(path);
+        std::map<std::string, LocationBloc>::iterator it1 = this->_locations.find(target);
 
         if (it1 == this->_locations.end())
         {
@@ -483,18 +480,31 @@ HttpResponse    Server::generate_post_response(HttpRequest &req)
             return (generate_error_response(400, "Bad Request", "No Content-Type mentioned"));
         }
 
+        //get the content type
+        std::string content_type = it->second;
+
+        //if there is an ; isolate the pure content type
+        size_t sep = content_type.find(';');
+        if (sep != std::string::npos)
+            content_type = content_type.substr(0, sep);
+
         //url encoded -> body is in key value pairs and represent simple data to be put in a file our case
-        else if (it->second == "application/x-www-form-urlencoded")
+        if (content_type == "application/x-www-form-urlencoded")
         {
             return (handle_url_encoded(req.getBody(), path));
         }
 
         //same as url encoded but with json format
-        else if (it->second == "application/json")
+        else if (content_type == "application/json")
         {
             return (handle_json(req.getBody(), path));
         }
 
+        //if it is multipart form data, there are one or more files to do
+        else if (content_type == "multipart/form-data")
+        {
+            return (handle_multipart(req.getBody(), path, it->second));
+        }
         //if any other Content-Type we can't safely parse it so return 415
         else
         {
