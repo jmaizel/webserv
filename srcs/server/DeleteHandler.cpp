@@ -12,7 +12,6 @@
 
 #include "../../includes/main.hpp"
 
-
 HttpResponse    Server::generate_delete_response(HttpRequest &req)
 {
     HttpResponse res;

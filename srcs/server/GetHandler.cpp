@@ -25,7 +25,6 @@ std::string generate_autoindex_string(const std::string &path, const std::string
         stream << "</ul>\n</body>\n</html>\n";
         return stream.str();
     }
-
     struct dirent *entry;
     //loop trough all the files in a directory
     while ((entry = readdir(dir)) != NULL)
@@ -68,8 +67,12 @@ HttpResponse    Server::generate_autoindex_response(const std::string &path, con
 {
     std::string body;
 
+    if (access(path.c_str(), R_OK | X_OK) < 0)
+    {
+        return generate_error_response(403, "Forbidden", "You do not have permissions to access this ressource");
+    }
     body = generate_autoindex_string(path, target);
-    return generate_success_response(200, "OK", body);
+    return generate_get_success_response(200, "OK", body);
 }
 
 //some files most browsers can manage
@@ -179,7 +182,6 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
             target.erase(target.size() - 1);
 
         //get the location bloc
-        std::cout << target << std::endl;
         locIt = this->_locations.find(target);
         if (locIt == this->_locations.end())
             return generate_error_response(404, "Not Found", "No matching location block");
@@ -218,11 +220,16 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     //static files
 
     //find the parent directory
-    std::string parent_directory = target.substr(0, target.find_last_of("/"));
+    std::string parent_directory;
+
+    //if home directory is /
+    if(target.empty() || target.find_last_of("/") == target.find_first_of("/"))
+        parent_directory = "/";
+    //if /upload/index.html -> /upload
+    else
+        parent_directory = target.substr(0, target.find_last_of("/"));
 
     //get the location bloc
-     std::cout << parent_directory << std::endl;
-    this->print();
     locIt = this->_locations.find(parent_directory);
     if (locIt == this->_locations.end())
         return generate_error_response(404, "Not Found", "No matching location block");
@@ -244,7 +251,7 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     //unreadable file
     if (access(path.c_str(), R_OK) < 0)
     {
-        return generate_error_response(403, "Forbidden", "Requested Ressource is unreadable");
+        return generate_error_response(403, "Forbidden", "You do not have to necessary permissions");
     }
 
     int fd = open(path.c_str(), O_RDONLY);
@@ -264,7 +271,7 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     close(fd);
 
     //Build success response
-    res = generate_success_response(200, "OK", body);
+    res = generate_get_success_response(200, "OK", body);
     res.setHeaders("Content-Type", get_content_Type(path));
     return (res);
 }

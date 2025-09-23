@@ -60,6 +60,7 @@ class Server
 		std::vector<int>	_client_fds;
 
         //helpers
+        HttpResponse    handle_file_response(const std::string &target, const std::string &body, int flag);
         HttpResponse    handle_url_encoded(const std::string &body, const std::string &path);
         HttpResponse    handle_json(const std::string &body, const std::string &path);
         HttpResponse    handle_multipart(const std::string &body, const std::string &path, const std::string &content_type);
@@ -88,6 +89,7 @@ class Server
         void            handle_client_request(int client_fd);
         HttpResponse    generate_response(HttpRequest &req);
         HttpResponse    generate_success_response(int code, const std::string &reason, const std::string &body);
+        HttpResponse    generate_get_success_response(int code, const std::string &reason, const std::string &body);
         HttpResponse    generate_autoindex_response(const std::string &path, const std::string &target);
         HttpResponse    generate_get_response(HttpRequest &req);
         HttpResponse    generate_post_response(HttpRequest &req);

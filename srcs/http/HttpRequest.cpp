@@ -69,6 +69,42 @@ const int   &HttpRequest::getFlag()const
     return (this->_flag);
 }
 
+std::string normalize_uri(const std::string &uri)
+{
+    std::vector<std::string> parts;
+    std::stringstream ss(uri);
+    std::string item;
+
+    //split by '/' and process each part
+    while (std::getline(ss, item, '/'))
+    {
+        if (item.empty() || item == ".")
+        {
+            //skip empty (handles //) and "."
+            continue;
+        }
+        if (item == "..")
+        {
+            // go one level up if possible
+            if (!parts.empty())
+                parts.pop_back();
+        }
+        else
+        {
+            parts.push_back(item);
+        }
+    }
+
+    //build normalized path
+    std::string result = "/";
+    for (size_t i = 0; i < parts.size(); i++)
+    {
+        result += parts[i];
+        if (i + 1 < parts.size())
+            result += "/";
+    }
+    return result;
+}
 
 void    HttpRequest::print()const
 {
@@ -146,7 +182,7 @@ void    HttpRequest::parse(const std::string &buffer)
         return ;
     }
     this->_method = elems[0];
-    this->_target = elems[1];
+    this->_target = normalize_uri(elems[1]);
     this->_version = elems[2];
 
     //check the headers

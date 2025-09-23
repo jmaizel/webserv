@@ -18,15 +18,15 @@ int main (int argc, char **argv)
     signal(SIGINT, ServerMonitor::handle_sigint);
     signal(SIGTERM, ServerMonitor::handle_sigint);
     
-    if (argc < 2)
-    {
-        std::cerr << "This program takes a config argument. If none it will use a default conf." << std::endl;
-        return (1);
-    }
-    
     std::string config = "config/default.conf";
 
-    if (argv[1])
+    if (argc > 2)
+    {
+        std::cerr << "Too many arguments: Enter only one config file" << std::endl;
+        return (1);
+    }
+
+    if (argc == 2 && argv[1])
         config = argv[1];
 
     try
