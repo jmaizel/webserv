@@ -156,18 +156,35 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     HttpResponse res;
 
     std::string target = req.getTarget();
-    std::string path = "./www" + target;
 
-    std::map<std::string, LocationBloc>::iterator locIt;
-    LocationBloc location;
-
-    struct stat st;
+    std::cout << "GET method called for target : " << target << std::endl;
 
     //check if there are no redirects in the server
     if (this->_redirect.size() > 1)
         return generate_redirect_response(this->_redirect);
-        
-    //Check existence
+
+    //check if there is a location match
+    std::map<std::string, LocationBloc>::iterator it = find_best_location(target);
+    if (it == this->_locations.end())
+        return generate_error_response(404, "Not Found", "Requested location does not exist");
+    std::cout << "Location matched to : " << it->first << std::endl;
+    LocationBloc location = it->second;
+    location.print();
+
+    //check if there are no redirects in the location
+    if (location.redirect.size() > 1)
+        return generate_redirect_response(location.redirect);
+
+    //check if GET is an accepted method in the location
+    if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
+        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method");
+    
+    //construct the path of the location based on the root
+    std::string path = get_ressource_path(target, location);
+    std::cout << "Contructed ressource path: " << path << std::endl;
+
+    //Check existence of the ressource path
+    struct stat st;
     if (stat(path.c_str(), &st) < 0)
     {
         if (errno == EACCES)
@@ -177,31 +194,10 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
             return generate_error_response(404, "Not Found", "The requested resource does not exist.");
         }
     }
-    
+
     //if it is a directory
     if (S_ISDIR(st.st_mode))
     {
-        //directories can be either dir or dir/. so normalize it
-        if (!target.empty() && target.find_last_of("/") != target.find_first_of("/") && target[target.size() - 1] == '/')
-            target.erase(target.size() - 1);
-
-        //get the location bloc
-        locIt = this->_locations.find(target);
-        if (locIt == this->_locations.end())
-            return generate_error_response(404, "Not Found", "No matching location block");
-
-        location = locIt->second;
-
-        //DEBUG
-        location.print();
-
-        //check if there are no redirects in the location
-        if (location.redirect.size() > 1)
-            return generate_redirect_response(location.redirect);
-
-        //check if GET is an accepted method in the location
-        if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
-            return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method");
         //look for the default page. if it exists then diplay that
         std::string index_path = path + location.index;
         struct stat st_index;
@@ -225,45 +221,21 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
         }
     }
 
-    //static files
+    //if it is a file
 
-    //find the parent directory
-    std::string parent_directory;
-
-    //if home directory is /
-    if(target.empty() || target.find_last_of("/") == target.find_first_of("/"))
-        parent_directory = "/";
-    //if /upload/index.html -> /upload
-    else
-        parent_directory = target.substr(0, target.find_last_of("/"));
-
-    //get the location bloc
-    locIt = this->_locations.find(parent_directory);
-    if (locIt == this->_locations.end())
-        return generate_error_response(404, "Not Found", "No matching location block");
-    location = locIt->second;
-
-    //DEBUG
-    location.print();
-
-    //check if GET is an accepted method in the location
-    if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
-        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method");
-
-    //regular file
+    //check if it is a regular file
     if (!S_ISREG(st.st_mode))
     {
         return generate_error_response(403, "Forbidden", "Requested ressource is not regular file");
     }
 
-    //unreadable file
+    //check permissions
     if (access(path.c_str(), R_OK) < 0)
     {
         return generate_error_response(403, "Forbidden", "You do not have to necessary permissions");
     }
 
     int fd = open(path.c_str(), O_RDONLY);
-    //open failure
     if (fd < 0)
     {
         return generate_error_response(500, "Internel Server Error", "File exists but read failed"); // unexpected error

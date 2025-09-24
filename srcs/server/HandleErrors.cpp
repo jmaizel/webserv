@@ -96,3 +96,41 @@ HttpResponse Server::generate_error_response(int code, const std::string &reason
 
     return (res);
 }
+
+std::string Server::get_ressource_path(const std::string &target, const LocationBloc &loc)
+{
+    const std::string &loc_prefix = loc.path;
+    const std::string &root = loc.root;
+
+    //strip common part to isolate the relative path
+    std::string relative;
+    if (target.size() >= loc_prefix.size())
+        relative = target.substr(loc_prefix.size());
+
+    //concatenate root and relative path to get full path
+    std::string full_path = root;
+    if (!relative.empty())
+        full_path += relative;
+
+    return full_path;
+}
+
+
+std::map<std::string, LocationBloc>::iterator Server::find_best_location(const std::string &target)
+{
+    std::map<std::string, LocationBloc>::iterator best = this->_locations.end();
+
+    for (std::map<std::string, LocationBloc>::iterator it = this->_locations.begin(); it != this->_locations.end(); ++it)
+    {
+        const std::string &loc_path = it->first;
+
+        //must match prefix
+        if (target.compare(0, loc_path.size(), loc_path) == 0)
+        {
+            //choose the longest match
+            if (best == this->_locations.end() || loc_path.size() > best->first.size())
+                best = it;
+        }
+    }
+    return best;
+}

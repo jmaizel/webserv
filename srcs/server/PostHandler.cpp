@@ -339,75 +339,19 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
     return generate_success_response(200, "OK", "Data proccessed successfully");
 }
 
-HttpResponse    Server::handle_file_response(const std::string &target, const std::string &body, int flag)
+HttpResponse    Server::handle_file_response(const std::string &path, LocationBloc &location, const std::string &body, int flag)
 {
-    //find the parent directory
-    std::string parent_dir;
-    std::string parent_dir_path;
-    std::string file_path = "./www" + target;
-
-    size_t slash_pos = target.find_last_of("/");
-    if (target.find_first_of("/") == target.find_last_of("/"))
-        parent_dir = "/";
-    else
-        parent_dir = target.substr(0, slash_pos);
-
-    parent_dir_path = "./www" + parent_dir;
-
-     //check if there are no redirects in the server
-    if (this->_redirect.size() > 1)
-        return generate_redirect_response(this->_redirect);
-        
-    //check if parent directory exist
-    struct stat dir_st;
-    if (stat(parent_dir_path.c_str(), &dir_st) < 0 || !S_ISDIR(dir_st.st_mode))
-    {
-        if (errno == EACCES)
-            return generate_error_response(403, "Forbidden", "You do not have permission to access this resource.");
-        else
-            return generate_error_response(404, "Not Found", "Parent directory does not exist");
-    }
-
-    //check parent directory write and x permission
-    if (access(parent_dir_path.c_str(), W_OK | X_OK) < 0)
-    {
-        return generate_error_response(403, "Forbidden", "You do not have permissions to access this ressource");
-    }
-
-    //check if it is in a location in the config
-    std::map<std::string, LocationBloc>::iterator it = this->_locations.find(parent_dir);
-
-    if (it == this->_locations.end())
-    {
-        generate_error_response(404, "Not Found", "The requested location does not exist");
-    }
-
-    //get the location bloc of the parent directory
-    LocationBloc location = it->second;
-    
-    //check if there are no redirects in the location
-    if (location.redirect.size() > 1)
-        return generate_redirect_response(location.redirect);
-
-    //check if POST is an accepted method in the location
-    if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
-        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method");
-
-    //check for body size
-    if(body.size() > location.client_max_body_size)
-        return generate_error_response(405, "Method Not Allowed", "Body too large");
-
     //if file exists already check for W persmission
     if (flag == 2)
     {
-        if (access(file_path.c_str(), W_OK) < 0)
+        if (access(path.c_str(), W_OK) < 0)
         {
             return generate_error_response(403, "Forbidden", "You do not have permissions to access this ressource");
         }
     }
 
     //create new file or overwite
-    int fd = open(file_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
     {
         return generate_error_response(500, "Internal Server Error", "Failed to create new file.");
@@ -418,9 +362,12 @@ HttpResponse    Server::handle_file_response(const std::string &target, const st
         write(fd, body.c_str(), body.size());
 
     close(fd);
+
+    //if file was already created return 200
     if (flag == 2)
         return generate_success_response(200, "OK", "File modified successfully");
-    return generate_success_response(201, "OK", "File created successfully");
+    //if a file was created return 201
+    return generate_success_response(201, "CREATED", "File created successfully");
 }
 
 HttpResponse    Server::generate_post_response(HttpRequest &req)
@@ -428,21 +375,51 @@ HttpResponse    Server::generate_post_response(HttpRequest &req)
     HttpResponse res;
 
     std::string target = req.getTarget();
-    std::string path = "./www" + target + "/";
 
+    std::cout << "Post method called for target : " << target << std::endl;
+
+    //check if there are no redirects in the server
+    if (this->_redirect.size() > 1)
+        return generate_redirect_response(this->_redirect);
+
+    //check if there is a location match
+    std::map<std::string, LocationBloc>::iterator it = find_best_location(target);
+    if (it == this->_locations.end())
+        return generate_error_response(404, "Not Found", "Requested location does not exist");
+    std::cout << "Location matched to : " << it->first << std::endl;
+    LocationBloc location = it->second;
+    location.print();
+
+    //check if there are no redirects in the location
+    if (location.redirect.size() > 1)
+        return generate_redirect_response(location.redirect);
+
+    //check if POST is an accepted method in the location
+    if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
+        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve DELETE method");
+    
+    //check body size
+    if(req.getBody().size() > location.client_max_body_size)
+        return generate_error_response(405, "Method Not Allowed", "Body too large");
+
+    //construct the path of the location based on the root
+    std::string path = get_ressource_path(target, location);
+    std::cout << "Contructed ressource path: " << path << std::endl;
+
+    //Check existence of the target
     struct stat st;
-
-    //Check existence
     if (stat(path.c_str(), &st) < 0)
     {
+        //if is exists but incorrect permissions
         if (errno == EACCES)
             return generate_error_response(403, "Forbidden", "You do not have permission to access this resource.");
+
         //if not exist make it a file if parent directory exists and permits POST
         if (errno == ENOENT)
         {
             //VERIFY WHEN YOU DO UPLOAD/QWERTY/
             //you should not create a file if qwerty/ (check upstream)
-            return handle_file_response(target, req.getBody(), 1);
+            return handle_file_response(target, location, req.getBody(), 1);
         }
         else
         {
@@ -450,7 +427,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req)
         }
     }
 
-    //if target is a directory we have to host the file there
+    //if target exists but is a directory
     if (S_ISDIR(st.st_mode))
     {
         //check directory write and x permission
@@ -459,34 +436,13 @@ HttpResponse    Server::generate_post_response(HttpRequest &req)
             return generate_error_response(403, "Forbidden", "You do not have permissions to access this ressource");
         }
 
-        //get the information on that location
-        std::map<std::string, LocationBloc>::iterator it1 = this->_locations.find(target);
-
-        if (it1 == this->_locations.end())
-        {
-            generate_error_response(404, "Not Found", "The requested location does not exist");
-        }
-
-        //get the location bloc of the parent directory
-        LocationBloc location = it1->second;
-
-        //check if POST is an accepted method in the location
-        if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
-            return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method");
-
-        //check for body size
-        if(req.getBody().size() > location.client_max_body_size)
-            return generate_error_response(405, "Method Not Allowed", "Body too large");
-
         //There are three types of POST methods (multipart, url encoded, json) that need parsing
 
         std::map<std::string, std::string>::const_iterator it = req.getHeaders().find("Content-Type");
 
         //if the client didn't specify a content type we can't parse it 
         if (it == req.getHeaders().end())
-        {
             return (generate_error_response(400, "Bad Request", "No Content-Type mentioned"));
-        }
 
         //get the content type
         std::string content_type = it->second;
@@ -513,13 +469,15 @@ HttpResponse    Server::generate_post_response(HttpRequest &req)
         {
             return (handle_multipart(req.getBody(), path, it->second));
         }
+
         //if any other Content-Type we can't safely parse it so return 415
         else
         {
             return (generate_error_response(415, "415 Unsupported Media Type", "Unrecognised Content-Type"));
         }
     }
-    //if it is a file thar already exists check for permission and ovewrite
-    return (handle_file_response(target, req.getBody(), 2));
+
+    //if it is a file that already exists check for permission and ovewrite
+    return (handle_file_response(target, location, req.getBody(), 2));
 }
 

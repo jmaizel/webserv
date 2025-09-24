@@ -63,7 +63,9 @@ class Server
 		std::vector<int>	_client_fds;
 
         //helpers
-        HttpResponse    handle_file_response(const std::string &target, const std::string &body, int flag);
+        std::map<std::string, LocationBloc>::iterator   find_best_location(const std::string &target);
+        std::string     get_ressource_path(const std::string &target, const LocationBloc &loc);
+        HttpResponse    handle_file_response(const std::string &target, LocationBloc &location, const std::string &body, int flag);
         HttpResponse    handle_url_encoded(const std::string &body, const std::string &path);
         HttpResponse    handle_json(const std::string &body, const std::string &path);
         HttpResponse    handle_multipart(const std::string &body, const std::string &path, const std::string &content_type);
