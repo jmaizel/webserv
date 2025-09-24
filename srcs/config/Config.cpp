@@ -18,7 +18,10 @@ LocationBloc::LocationBloc() :
     allowed_methods(1, "GET"),
     client_max_body_size(1048576),
     index("index.html"),
-    autoindex(false)
+    autoindex(false),
+    upload_path("upload/"),
+    upload_enable(false),
+    redirect()
 {
 
 }
@@ -30,7 +33,12 @@ LocationBloc::~LocationBloc()
 
 void    LocationBloc::print()
 {
-    std::cout << '\t' << path << "\n\t" << root << "\n\t" << client_max_body_size << "\n\t" << index << "\n\t" << autoindex << std::endl;
+    std::cout << '\t' << path << "\n\t" << root << "\n\t" << client_max_body_size << "\n\t" << index << "\n\t" << autoindex << "\n\t" << upload_path << "\n\t" << upload_enable << std::endl;
+    if (redirect.size() > 0)
+        std::cout << "\t" << redirect[0];
+    if (redirect.size() > 1)
+        std::cout << " " << redirect[1];
+    std::cout << std::endl;
     for (size_t i = 0; i < allowed_methods.size(); i++)
         std::cout << "\t" << allowed_methods[i] << std::endl;
 }
@@ -43,7 +51,10 @@ ServerBloc::ServerBloc() :
     allowed_methods(1, "GET"),
     client_max_body_size(1048576),
     autoindex(false),
-    locations()
+    locations(),
+    upload_path("upload/"),
+    upload_enable(false),
+    redirect()
 {
 
 }
@@ -55,7 +66,7 @@ ServerBloc::~ServerBloc()
 
 void    ServerBloc::print()
 {
-    std::cout << listen << "\n" << name << "\n" << root << "\n" << index <<  "\n" << client_max_body_size << "\n" << autoindex << std::endl;;
+    std::cout << listen << "\n" << name << "\n" << root << "\n" << index <<  "\n" << client_max_body_size << "\n" << autoindex << "\n\t" << upload_path << "\n\t" << upload_enable << "\n\t"  << redirect[0] << "\n\t" << redirect[1] << std::endl;
     for (size_t i = 0; i < allowed_methods.size(); i++)
         std::cout << allowed_methods[i] << std::endl;
     for(std::map<std::string, LocationBloc>::iterator it = locations.begin(); it != locations.end(); ++it)

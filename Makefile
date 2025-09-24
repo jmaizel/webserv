@@ -26,7 +26,7 @@ SRC =	srcs/main.cpp \
 		srcs/http/HttpResponse.cpp
 
 OBJ = ${SRC:.cpp=.o}
-CC = c++ 
+CC = c++ -fsanitize=address -g
 CFLAGS = #-Wall -Wextra -Werror -std=c++98
 CXX = $(CC) $(CFLAGS)
 

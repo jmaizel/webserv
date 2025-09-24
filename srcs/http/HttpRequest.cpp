@@ -24,7 +24,7 @@ body(optional)  {"username":"harold","password":"42"}
 
 */
 
-HttpRequest::HttpRequest() : _version(""), _headers(), _body("")
+HttpRequest::HttpRequest() : _version(""), _headers(), _body(""), _query_string(""), _flag(0), _target("")
 {
 
 }
@@ -62,6 +62,11 @@ const std::map<std::string, std::string>    &HttpRequest::getHeaders()const
 const std::string                         &HttpRequest::getBody()const
 {
     return (this->_body);
+}
+
+const std::string                         &HttpRequest::getQueryString()const
+{
+    return (this->_query_string);
 }
 
 const int   &HttpRequest::getFlag()const
@@ -182,7 +187,21 @@ void    HttpRequest::parse(const std::string &buffer)
         return ;
     }
     this->_method = elems[0];
-    this->_target = normalize_uri(elems[1]);
+
+    //the uri can have a query string
+    std::cout << "HERE" << elems[1] << std::endl;
+    if (elems[1].find("?") != std::string::npos)
+    {
+        size_t pos = elems[1].find_first_of("?");
+        this->_target = normalize_uri(elems[1].substr(0, pos));
+        if (this->_target.empty())
+            this->_flag = 400;
+        this->_query_string = elems[1].substr(pos + 1); 
+    }
+    else
+    {
+        this->_target = normalize_uri(elems[1]);
+    }
     this->_version = elems[2];
 
     //check the headers

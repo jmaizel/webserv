@@ -46,7 +46,10 @@ class Server
         std::string                         _name;
         std::string                         _index;
         bool                                _autoindex;
+        bool                                _upload_enable;
+        std::string                         _upload_path;
         std::vector<std::string>            _allowed_methods;
+        std::vector<std::string>           _redirect;
         size_t                              _client_max_body_size;
         std::map<std::string, LocationBloc> _locations;
 
@@ -95,4 +98,5 @@ class Server
         HttpResponse    generate_post_response(HttpRequest &req);
         HttpResponse    generate_delete_response(HttpRequest &req);
         HttpResponse    generate_error_response(int code, const std::string &reason, const std::string &details);
+        HttpResponse    generate_redirect_response(const std::vector<std::string> &redirect);
 };

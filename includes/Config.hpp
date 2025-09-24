@@ -20,9 +20,12 @@ struct LocationBloc
 {
     std::string                 path;                  
     std::string                 root;                  
-    std::vector<std::string>    allowed_methods;  
+    std::vector<std::string>    allowed_methods;
+    std::vector<std::string>    redirect;
     size_t                      client_max_body_size;       
     std::string                 index;
+    std::string                 upload_path;
+    bool                        upload_enable;
     bool                        autoindex;        
     LocationBloc();
     ~LocationBloc();
@@ -36,9 +39,12 @@ struct ServerBloc
     std::string                         index;
     int                                 listen;
     std::vector<std::string>            allowed_methods;
+    std::vector<std::string>            redirect;
     size_t                              client_max_body_size;
     bool                                autoindex;
-    std::map<std::string, LocationBloc> locations;            
+    bool                                upload_enable;
+    std::map<std::string, LocationBloc> locations;    
+    std::string                         upload_path;        
     ServerBloc();
     ~ServerBloc();
     void    print();

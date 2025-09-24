@@ -32,6 +32,7 @@ class HttpRequest
 {
     private:
         std::string                         _buffer;
+        std::string                         _query_string;
         std::string                         _method;
         std::string                         _target;
         std::string                         _version;
@@ -52,6 +53,7 @@ class HttpRequest
         ~HttpRequest();
 
         //getters
+        const std::string                           &getQueryString()const;
         const std::string                           &getMethod()const;
         const std::string                           &getTarget()const;
         const std::string                           &getVersion()const;

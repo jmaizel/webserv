@@ -148,6 +148,18 @@ void ServerMonitor::run()
     }
 }
 
+bool is_redirect_code(size_t code)
+{
+    return (code == 301 || code == 302 || code == 303 || code == 307 || code == 308);
+}
+
+bool is_error_code(size_t code)
+{
+    return (code >= 100 && code <= 599);
+}
+
+
+
 LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string &pathi, size_t *i)
 {
     LocationBloc                location;
@@ -189,12 +201,36 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
         else if (key_values[0] == "client_max_body_size")
         {
             try{location.client_max_body_size = safe_atosize_t(key_values[1]);}
-                catch (std::exception &e) {throw;}
+                catch (std::exception &e) {throw std::runtime_error(key_values[0] + ": not a valid number");;}
         }
         else if (key_values[0] == "autoindex")
         {
             if (key_values[1] == "on")
                 location.autoindex = true;
+        }
+        else if (key_values[0] == "return")
+        {
+            //either there are 3 args we have an error code and a raison/redirect 
+            //either there are 2 args we only have a error code
+            size_t test;
+            try{test = safe_atosize_t(key_values[1]);}
+                catch (std::exception &e) {throw std::runtime_error(key_values[1] + ": not a valid error code");}
+            if (!is_error_code(test))
+                throw std::runtime_error(key_values[1] + ": not a valid error code");
+            if (!is_redirect_code(test) && key_values.size() < 3)
+                throw std::runtime_error(key_values[1] + ": no redirection path after redirection code");
+            location.redirect.push_back(key_values[1]);
+            if (key_values.size() == 3)
+                location.redirect.push_back(key_values[2]);
+        }
+        else if (key_values[0] == "upload_path")
+        {
+            location.upload_path = key_values[1];
+        }
+        else if (key_values[0] == "upload_enable")
+        {
+            if (key_values[1] == "on")
+                location.upload_enable = true;
         }
         //non recognised token
         else 
@@ -268,6 +304,25 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         {
             try { sbloc.locations[key_values[1]] = get_location_bloc(tokens, key_values[1], &i);}
             catch (std::exception &e){throw;}
+        }
+        else if (key_values[0] == "return")
+        {
+            //either there are 3 args we have an error code and a raison/redirect 
+            //either there are 2 args we only have a error code
+            try{size_t test = safe_atosize_t(key_values[1]);}
+                catch (std::exception &e) {throw std::runtime_error(key_values[1] + ": not a valid error code");}
+            sbloc.redirect.push_back(key_values[1]);
+            if (key_values.size() == 3)
+                sbloc.redirect.push_back(key_values[2]);
+        }
+        else if (key_values[0] == "upload_path")
+        {
+            sbloc.upload_path = key_values[1];
+        }
+        else if (key_values[0] == "upload_enable")
+        {
+            if (key_values[1] == "on")
+                sbloc.upload_enable = true;
         }
         //non recognised token
         else 

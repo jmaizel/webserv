@@ -29,6 +29,39 @@ HttpResponse Server::generate_success_response(int code, const std::string &reas
     return (res);
 }
 
+HttpResponse Server::generate_redirect_response(const std::vector<std::string> &redirect)
+{
+    //if redirect code is of type 3xx then it is a redirection. use GET to get the ressource
+    size_t code = safe_atosize_t(redirect[0]);
+
+    //all the actual redirect codes
+    if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308)
+    {
+        std::string location = redirect[1];
+        HttpResponse res;
+
+        res.setStatusCode(code);
+        res.setReason("Redirected");
+        res.setHeaders("Location", location);
+        res.setHeaders("Content-Type", "text/html");
+
+        std::ostringstream body;
+        body << "<html><body><h1>" << code << " " 
+             << "Redirected" << "</h1>"
+             << "<a href=\"" << location << "\">" << location << "</a>"
+             << "</body></html>";
+
+        res.setBody(body.str());
+        res.setHeaders("Content-Length", std::to_string(body.str().size()));
+        return res;
+    }
+
+    //otherwise it is just an arbitrary error code with a raison
+    if (redirect.size() == 2)
+        return generate_error_response(code, redirect[1], "Return option was called");
+    return generate_error_response(code, "Unspecified", "Return option was called");
+}
+
 
 HttpResponse Server::generate_get_success_response(int code, const std::string &reason, const std::string &body)
 {

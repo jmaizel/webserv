@@ -354,6 +354,10 @@ HttpResponse    Server::handle_file_response(const std::string &target, const st
 
     parent_dir_path = "./www" + parent_dir;
 
+     //check if there are no redirects in the server
+    if (this->_redirect.size() > 1)
+        return generate_redirect_response(this->_redirect);
+        
     //check if parent directory exist
     struct stat dir_st;
     if (stat(parent_dir_path.c_str(), &dir_st) < 0 || !S_ISDIR(dir_st.st_mode))
@@ -381,6 +385,10 @@ HttpResponse    Server::handle_file_response(const std::string &target, const st
     //get the location bloc of the parent directory
     LocationBloc location = it->second;
     
+    //check if there are no redirects in the location
+    if (location.redirect.size() > 1)
+        return generate_redirect_response(location.redirect);
+
     //check if POST is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method");

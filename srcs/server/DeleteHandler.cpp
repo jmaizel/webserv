@@ -22,6 +22,9 @@ HttpResponse    Server::generate_delete_response(HttpRequest &req)
 
     struct stat st;
 
+    //check if there are no redirects in the server
+    if (this->_redirect.size() > 1)
+        return generate_redirect_response(this->_redirect);
     //Check existence
     if (stat(path.c_str(), &st) < 0)
     {
@@ -41,13 +44,16 @@ HttpResponse    Server::generate_delete_response(HttpRequest &req)
 
     if (it == this->_locations.end())
     {
-        generate_error_response(404, "Not Found", "The requested ressource does not exist");
+        generate_error_response(404, "Not Found", "Requested location does not exist");
     }
 
     LocationBloc location = it->second;
     std::cout << parent <<  std::endl;
     location.print();
 
+    //check if there are no redirects in the location
+    if (location.redirect.size() > 1)
+        return generate_redirect_response(location.redirect);
     //check if DELETE is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "DELETE") == location.allowed_methods.end())
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve DELETE method");

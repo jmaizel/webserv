@@ -37,13 +37,16 @@ Server::Server(ServerBloc &s)
     : _root(s.root),
     _name(s.name),
     _index(s.index),
-    _autoindex(false),
+    _autoindex(s.autoindex),
     _allowed_methods(s.allowed_methods),
     _client_max_body_size(s.client_max_body_size),
     _locations(s.locations),
     _listen(s.listen),
     _server_fd(-1),
-    _max_fd(-1)
+    _max_fd(-1),
+    _redirect(s.redirect),
+    _upload_path(s.upload_path),
+    _upload_enable(s.upload_enable)
 {
     std::memset(&_address, 0, sizeof(_address));
     FD_ZERO(&_read_fds);
@@ -140,6 +143,12 @@ void    Server::print()
     std::cout << std::endl;
     std::cout << "max body size: " << this->_client_max_body_size <<  std::endl;
     std::cout << "autoindex: " << this->_autoindex <<  std::endl;
+    std::cout << "upload enabled: " << this->_upload_enable <<  std::endl;
+    std::cout << "upload path: " << this->_upload_path <<  std::endl;
+    if (this->_redirect.size() == 1)
+        std::cout << "redirect: " << this->_redirect[0] <<  std::endl;
+        if (this->_redirect.size() == 2)
+        std::cout << "redirect: " << this->_redirect[0] << " " << this->_redirect[1] <<  std::endl;
     std::map<std::string, LocationBloc>::iterator it;
     for (it = this->_locations.begin() ; it != this->_locations.end(); ++it)
     {

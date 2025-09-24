@@ -163,6 +163,10 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
 
     struct stat st;
 
+    //check if there are no redirects in the server
+    if (this->_redirect.size() > 1)
+        return generate_redirect_response(this->_redirect);
+        
     //Check existence
     if (stat(path.c_str(), &st) < 0)
     {
@@ -190,6 +194,10 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
 
         //DEBUG
         location.print();
+
+        //check if there are no redirects in the location
+        if (location.redirect.size() > 1)
+            return generate_redirect_response(location.redirect);
 
         //check if GET is an accepted method in the location
         if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
