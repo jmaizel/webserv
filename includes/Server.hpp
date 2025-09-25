@@ -49,7 +49,8 @@ class Server
         bool                                _upload_enable;
         std::string                         _upload_path;
         std::vector<std::string>            _allowed_methods;
-        std::vector<std::string>           _redirect;
+        std::vector<std::string>            _redirect;
+         std::vector<std::string>           _error_page;
         size_t                              _client_max_body_size;
         std::map<std::string, LocationBloc> _locations;
 
@@ -65,10 +66,11 @@ class Server
         //helpers
         std::map<std::string, LocationBloc>::iterator   find_best_location(const std::string &target);
         std::string     get_ressource_path(const std::string &target, const LocationBloc &loc);
+        std::string     get_POST_ressource_path(const std::string &target, const LocationBloc &loc);
         HttpResponse    handle_file_response(const std::string &target, LocationBloc &location, const std::string &body, int flag);
-        HttpResponse    handle_url_encoded(const std::string &body, const std::string &path);
-        HttpResponse    handle_json(const std::string &body, const std::string &path);
-        HttpResponse    handle_multipart(const std::string &body, const std::string &path, const std::string &content_type);
+        HttpResponse    handle_url_encoded(const std::string &body, const std::string &path, LocationBloc &location);
+        HttpResponse    handle_json(const std::string &body, const std::string &path, LocationBloc &location);
+        HttpResponse    handle_multipart(const std::string &body, const std::string &path, const std::string &content_type, LocationBloc &location);
         std::string     get_boundary(const std::string &content_type);
 
     public:
@@ -95,10 +97,11 @@ class Server
         HttpResponse    generate_response(HttpRequest &req);
         HttpResponse    generate_success_response(int code, const std::string &reason, const std::string &body);
         HttpResponse    generate_get_success_response(int code, const std::string &reason, const std::string &body);
-        HttpResponse    generate_autoindex_response(const std::string &path, const std::string &target);
-        HttpResponse    generate_get_response(HttpRequest &req);
-        HttpResponse    generate_post_response(HttpRequest &req);
-        HttpResponse    generate_delete_response(HttpRequest &req);
-        HttpResponse    generate_error_response(int code, const std::string &reason, const std::string &details);
-        HttpResponse    generate_redirect_response(const std::vector<std::string> &redirect);
+        HttpResponse    generate_autoindex_response(const std::string &path, const std::string &target, LocationBloc &location);
+        HttpResponse    generate_get_response(HttpRequest &req, LocationBloc &location);
+        HttpResponse    generate_post_response(HttpRequest &req, LocationBloc &location);
+        HttpResponse    generate_delete_response(HttpRequest &req, LocationBloc &location);
+        HttpResponse    generate_error_response(int code, const std::string &reason, const std::string &details, LocationBloc &location);
+        HttpResponse    generate_custom_error_response(int code, LocationBloc &location);
+        HttpResponse    generate_redirect_response(const std::vector<std::string> &redirect, LocationBloc &location);
 };

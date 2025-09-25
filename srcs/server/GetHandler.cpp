@@ -63,13 +63,13 @@ std::string generate_autoindex_string(const std::string &path, const std::string
 }
 
 
-HttpResponse    Server::generate_autoindex_response(const std::string &path, const std::string &target)
+HttpResponse    Server::generate_autoindex_response(const std::string &path, const std::string &target, LocationBloc &location)
 {
     std::string body;
 
     if (access(path.c_str(), R_OK | X_OK) < 0)
     {
-        return generate_error_response(403, "Forbidden", "You do not have permissions to access this ressource");
+        return generate_error_response(403, "Forbidden", "You do not have permissions to access this ressource", location);
     }
     body = generate_autoindex_string(path, target);
     return generate_get_success_response(200, "OK", body);
@@ -151,7 +151,7 @@ std::string get_content_Type(std::string file)
 }
 
 
-HttpResponse Server::generate_get_response(HttpRequest &req)
+HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &location)
 {
     HttpResponse res;
 
@@ -159,25 +159,12 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
 
     std::cout << "GET method called for target : " << target << std::endl;
 
-    //check if there are no redirects in the server
-    if (this->_redirect.size() > 1)
-        return generate_redirect_response(this->_redirect);
-
-    //check if there is a location match
-    std::map<std::string, LocationBloc>::iterator it = find_best_location(target);
-    if (it == this->_locations.end())
-        return generate_error_response(404, "Not Found", "Requested location does not exist");
-    std::cout << "Location matched to : " << it->first << std::endl;
-    LocationBloc location = it->second;
+    std::cout << "Location matched to : " << location.path << std::endl;
     location.print();
-
-    //check if there are no redirects in the location
-    if (location.redirect.size() > 1)
-        return generate_redirect_response(location.redirect);
 
     //check if GET is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
-        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method");
+        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method", location);
     
     //construct the path of the location based on the root
     std::string path = get_ressource_path(target, location);
@@ -188,10 +175,10 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     if (stat(path.c_str(), &st) < 0)
     {
         if (errno == EACCES)
-            return generate_error_response(403, "Forbidden", "You do not have permission to access this resource.");
+            return generate_error_response(403, "Forbidden", "You do not have permission to access this resource.", location);
         else
         {
-            return generate_error_response(404, "Not Found", "The requested resource does not exist.");
+            return generate_error_response(404, "Not Found", "The requested resource does not exist.", location);
         }
     }
 
@@ -212,12 +199,12 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
         //if index doesn't exist and there is autoindex display the autoindex
         else if (location.autoindex == true)
         {
-            return generate_autoindex_response(path, location.path);
+            return generate_autoindex_response(path, location.path, location);
         }
         //if there is no index/wrong permissions and no autoindex -> 403
         else
         {
-            return generate_error_response(403, "Forbidden", "Requested location has no index file and no autoindex");
+            return generate_error_response(403, "Forbidden", "Requested location has no index file and no autoindex", location);
         }
     }
 
@@ -226,19 +213,19 @@ HttpResponse Server::generate_get_response(HttpRequest &req)
     //check if it is a regular file
     if (!S_ISREG(st.st_mode))
     {
-        return generate_error_response(403, "Forbidden", "Requested ressource is not regular file");
+        return generate_error_response(403, "Forbidden", "Requested ressource is not regular file", location);
     }
 
     //check permissions
     if (access(path.c_str(), R_OK) < 0)
     {
-        return generate_error_response(403, "Forbidden", "You do not have to necessary permissions");
+        return generate_error_response(403, "Forbidden", "You do not have to necessary permissions", location);
     }
 
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0)
     {
-        return generate_error_response(500, "Internel Server Error", "File exists but read failed"); // unexpected error
+        return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
     }
 
     std::string body;

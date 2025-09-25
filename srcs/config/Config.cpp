@@ -38,6 +38,12 @@ void    LocationBloc::print()
         std::cout << "\t" << redirect[0];
     if (redirect.size() > 1)
         std::cout << " " << redirect[1];
+    if (error_page.size() > 0)
+    {
+        std::cout << "error page: ";
+        for (size_t i = 0; i < error_page.size(); i++)
+            std::cout << error_page[i] << " ";
+    }
     std::cout << std::endl;
     for (size_t i = 0; i < allowed_methods.size(); i++)
         std::cout << "\t" << allowed_methods[i] << std::endl;
@@ -52,9 +58,10 @@ ServerBloc::ServerBloc() :
     client_max_body_size(1048576),
     autoindex(false),
     locations(),
-    upload_path("upload/"),
+    upload_path(""),
     upload_enable(false),
-    redirect()
+    redirect(),
+    error_page()
 {
 
 }

@@ -155,7 +155,7 @@ bool is_redirect_code(size_t code)
 
 bool is_error_code(size_t code)
 {
-    return (code >= 100 && code <= 599);
+    return (code >= 400 && code <= 599);
 }
 
 
@@ -207,6 +207,12 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
         {
             if (key_values[1] == "on")
                 location.autoindex = true;
+             else if (key_values[1] == "off")
+                location.autoindex = false;
+            else
+            {
+                throw std::runtime_error(key_values[1] + ": unkown parameter");
+            }
         }
         else if (key_values[0] == "return")
         {
@@ -214,9 +220,9 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
             //either there are 2 args we only have a error code
             size_t test;
             try{test = safe_atosize_t(key_values[1]);}
-                catch (std::exception &e) {throw std::runtime_error(key_values[1] + ": not a valid error code");}
-            if (!is_error_code(test))
-                throw std::runtime_error(key_values[1] + ": not a valid error code");
+                catch (std::exception &e) {throw std::runtime_error(key_values[1] + ": not a valid code");}
+            if (!is_error_code(test) && !is_redirect_code(test))
+                throw std::runtime_error(key_values[1] + ": not a valid error/redirection code");
             if (!is_redirect_code(test) && key_values.size() < 3)
                 throw std::runtime_error(key_values[1] + ": no redirection path after redirection code");
             location.redirect.push_back(key_values[1]);
@@ -231,6 +237,34 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
         {
             if (key_values[1] == "on")
                 location.upload_enable = true;
+            else if (key_values[1] == "off")
+                location.upload_enable = false;
+            else
+            {
+                throw std::runtime_error(key_values[1] + ": unkown parameter");
+            }
+        }
+        else if (key_values[0] == "error_page")
+        {
+            if (key_values.size() < 3)
+                throw std::runtime_error("error_page: not enough parameters");
+        
+            std::string uri = key_values.back();
+            if (uri.empty())
+                throw std::runtime_error(uri + ": not a valid URI");
+        
+            for (size_t i = 1; i < key_values.size() - 1; ++i)
+            {
+                size_t code;
+                try {code = safe_atosize_t(key_values[i]);}
+                catch (std::exception &e) { throw std::runtime_error(key_values[i] + ": not a valid number");}
+            
+                if (!is_error_code(code))
+                    throw std::runtime_error(key_values[i] + ": not a valid error code");
+            
+                location.error_page.push_back(key_values[i]);
+            }
+            location.error_page.push_back(uri);
         }
         //non recognised token
         else 
@@ -271,8 +305,6 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
             for (int l = 1; l < key_values.size(); ++l)
                 sbloc.allowed_methods.push_back(key_values[l]);
         }
-        else if (key_values.size() > 2)
-            throw std::runtime_error(key_values[2] + ": unrecognized value");
         else if (key_values[0] == "listen")
         {
             try{sbloc.listen = safe_atosize_t(key_values[1]);}
@@ -299,6 +331,12 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         {
             if (key_values[1] == "on")
                 sbloc.autoindex = true;
+            else if (key_values[1] == "off")
+                sbloc.autoindex = false;
+            else
+            {
+                throw std::runtime_error(key_values[1] + ": unknown parameter");
+            }
         }
         else if (key_values[0] == "location")
         {
@@ -307,8 +345,10 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         }
         else if (key_values[0] == "return")
         {
-            //either there are 3 args we have an error code and a raison/redirect 
-            //either there are 2 args we only have a error code
+            if (key_values.size() < 2)
+                throw std::runtime_error("return: missing status code");
+            if (key_values.size() > 3)
+                throw std::runtime_error("return: too may parameters");
             try{size_t test = safe_atosize_t(key_values[1]);}
                 catch (std::exception &e) {throw std::runtime_error(key_values[1] + ": not a valid error code");}
             sbloc.redirect.push_back(key_values[1]);
@@ -323,7 +363,36 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         {
             if (key_values[1] == "on")
                 sbloc.upload_enable = true;
+            else if (key_values[1] == "off")
+                sbloc.upload_enable = false;
+            else
+            {
+                throw std::runtime_error(key_values[1] + ": unkown parameter");
+            }
         }
+        else if (key_values[0] == "error_page")
+        {
+            if (key_values.size() < 3)
+                throw std::runtime_error("error_page: not enough parameters");
+        
+            std::string uri = key_values.back();
+            if (uri.empty())
+                throw std::runtime_error(uri + ": not a valid URI");
+        
+            for (size_t i = 1; i < key_values.size() - 1; ++i)
+            {
+                size_t code;
+                try {code = safe_atosize_t(key_values[i]);}
+                catch (std::exception &e) { throw std::runtime_error(key_values[i] + ": not a valid number");}
+            
+                if (!is_error_code(code))
+                    throw std::runtime_error(key_values[i] + ": not a valid error code");
+            
+                sbloc.error_page.push_back(key_values[i]);
+            }
+            sbloc.error_page.push_back(uri);
+        }
+
         //non recognised token
         else 
         {

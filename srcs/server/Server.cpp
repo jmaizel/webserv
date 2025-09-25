@@ -22,7 +22,11 @@ Server::Server()
       _client_max_body_size(1000000),
       _locations(),
       _server_fd(-1),
-      _max_fd(-1)
+      _max_fd(-1),
+      _redirect(),
+      _upload_path(""),
+      _upload_enable(false),
+      _error_page()
 {
     std::memset(&_address, 0, sizeof(_address));
     FD_ZERO(&_read_fds);
@@ -46,7 +50,8 @@ Server::Server(ServerBloc &s)
     _max_fd(-1),
     _redirect(s.redirect),
     _upload_path(s.upload_path),
-    _upload_enable(s.upload_enable)
+    _upload_enable(s.upload_enable),
+    _error_page(s.error_page)
 {
     std::memset(&_address, 0, sizeof(_address));
     FD_ZERO(&_read_fds);
@@ -147,8 +152,15 @@ void    Server::print()
     std::cout << "upload path: " << this->_upload_path <<  std::endl;
     if (this->_redirect.size() == 1)
         std::cout << "redirect: " << this->_redirect[0] <<  std::endl;
-        if (this->_redirect.size() == 2)
+    if (this->_redirect.size() == 2)
         std::cout << "redirect: " << this->_redirect[0] << " " << this->_redirect[1] <<  std::endl;
+    if (this->_error_page.size() > 0)
+    {
+        std::cout << "error page: ";
+        for (size_t i = 0; i < this->_error_page.size(); i++)
+            std::cout << this->_error_page[i] << " ";
+    }
+    std::cout << std::endl;
     std::map<std::string, LocationBloc>::iterator it;
     for (it = this->_locations.begin() ; it != this->_locations.end(); ++it)
     {
@@ -213,28 +225,44 @@ void Server::accept_new_client(void)
 HttpResponse    Server::generate_response(HttpRequest &req)
 {
     HttpResponse    res;
+
+    //get the method of the request
     std::string     method = req.getMethod();
+    //get the target of the request
+    std::string     target = req.getTarget();
+    //get the corresponding location of the request (there is always one, the default location /)
+    std::map<std::string, LocationBloc>::iterator   it = find_best_location(target);
+    LocationBloc location = it->second;
+
+    //check if there are no redirects in the server -> redirect directly
+    if (this->_redirect.size() > 1)
+        return generate_redirect_response(this->_redirect, location);
+
+    //check if there are no redirects in the location -> redirect directly
+    if (location.redirect.size() > 1)
+        return generate_redirect_response(location.redirect, location);
 
     //if request was malformed
     if (req.getFlag() == 400)
     {
-        res =  res = generate_error_response(400, "Bad Request", "The browser sent a request that this server could not understand");
+        res =  res = generate_error_response(400, "Bad Request", "The browser sent a request that this server could not understand", location);
     }
     if (method == "GET")
     {
-        res = generate_get_response(req);
+        res = generate_get_response(req, location);
     }
     else if (method == "POST")
     {
-        res = generate_post_response(req);
+        res = generate_post_response(req, location);
     }
     else if (method == "DELETE")
     {
-        res = generate_delete_response(req);
+        res = generate_delete_response(req, location);
     }
+    //if unknown method
     else
     {
-        res = generate_error_response(501, "Not Implemented", "This method is not supported by the server");
+        res = generate_error_response(501, "Not Implemented", "This method is not supported by the server", location);
     }
     return (res);
 }

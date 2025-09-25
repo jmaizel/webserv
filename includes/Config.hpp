@@ -22,6 +22,7 @@ struct LocationBloc
     std::string                 root;                  
     std::vector<std::string>    allowed_methods;
     std::vector<std::string>    redirect;
+    std::vector<std::string>    error_page;
     size_t                      client_max_body_size;       
     std::string                 index;
     std::string                 upload_path;
@@ -40,6 +41,7 @@ struct ServerBloc
     int                                 listen;
     std::vector<std::string>            allowed_methods;
     std::vector<std::string>            redirect;
+    std::vector<std::string>            error_page;
     size_t                              client_max_body_size;
     bool                                autoindex;
     bool                                upload_enable;
