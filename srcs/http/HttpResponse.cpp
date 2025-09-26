@@ -43,7 +43,10 @@ HttpResponse::~HttpResponse()
 
 }
 
-
+const std::map<std::string, std::string> &HttpResponse::getHeaders()const
+{
+    return (this->_headers);
+}
 
 void    HttpResponse::setVersion(const std::string &version)
 {

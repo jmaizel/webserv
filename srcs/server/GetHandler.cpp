@@ -222,6 +222,24 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
         return generate_error_response(403, "Forbidden", "You do not have to necessary permissions", location);
     }
 
+    //check if it is CGI
+    size_t dot = path.rfind('.');
+    if (dot != std::string::npos)
+    {
+        //construct the file extension
+        std::string ext = path.substr(dot + 1);
+
+        //check in location.cgi_extension
+        for (size_t i = 0; i < location.cgi_extension.size(); ++i)
+        {
+            if (ext == location.cgi_extension[i])
+            {
+                //file should be executed as CGI
+                return generate_cgi_response(req, path, location);
+            }
+        }
+    }
+
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0)
     {

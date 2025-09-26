@@ -513,6 +513,24 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
         }
     }
 
+    //check if it is CGI
+    size_t dot = path.rfind('.');
+    if (dot != std::string::npos)
+    {
+        //construct the file extension
+        std::string ext = path.substr(dot + 1);
+
+        //check in location.cgi_extension
+        for (size_t i = 0; i < location.cgi_extension.size(); ++i)
+        {
+            if (ext == location.cgi_extension[i])
+            {
+                //file should be executed as CGI
+                return generate_cgi_response(req, path, location);
+            }
+        }
+    }
+    
     //if it is a file that already exists check for permission and ovewrite
     return (handle_file_response(path, location, req.getBody(), 2));
 }

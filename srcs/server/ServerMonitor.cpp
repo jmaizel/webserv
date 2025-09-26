@@ -267,6 +267,12 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
             }
             location.error_page.push_back(uri);
         }
+        else if (key_values[0] == "cgi_extension")
+        {
+            if (key_values[1] != ".py")
+                throw std::runtime_error(key_values[1] + ": not a valid python extension");
+            location.cgi_extension.push_back(key_values[1]);
+        }
         //non recognised token
         else 
         {
@@ -394,7 +400,12 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
             }
             sbloc.error_page.push_back(uri);
         }
-
+        else if (key_values[0] == "cgi_extension")
+        {
+            if (key_values[1] != ".py")
+                throw std::runtime_error(key_values[1] + ": not a valid python extension");
+            sbloc.cgi_extension.push_back(key_values[1]);
+        }
         //non recognised token
         else 
         {

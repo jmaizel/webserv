@@ -54,4 +54,5 @@ class HttpResponse
         //methods
         std::string toStr();
         void        print();
+        const std::map<std::string, std::string> &getHeaders()const;
 };
