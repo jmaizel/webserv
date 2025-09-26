@@ -241,7 +241,7 @@ std::string Server::get_ressource_path(const std::string &target, const Location
     std::string full_path = root;
     if (!relative.empty())
     {
-        if (!full_path.empty() && full_path[full_path.size() - 1] != '/')
+        if (!full_path.empty() && full_path[full_path.size() - 1] != '/' && relative[0] != '/')
             full_path += '/';
         full_path += relative;
     }

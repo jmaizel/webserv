@@ -38,9 +38,11 @@ void    LocationBloc::print()
         std::cout << "\t" << redirect[0];
     if (redirect.size() > 1)
         std::cout << " " << redirect[1];
+    if (this->cgi_extension.size() == 1)
+        std::cout << "\tCGI: " << this->cgi_extension[0] <<  std::endl;
     if (error_page.size() > 0)
     {
-        std::cout << "error page: ";
+        std::cout << "\terror page: ";
         for (size_t i = 0; i < error_page.size(); i++)
             std::cout << error_page[i] << " ";
     }

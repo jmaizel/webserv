@@ -226,6 +226,7 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
     size_t dot = path.rfind('.');
     if (dot != std::string::npos)
     {
+        std::cout << "CGI ACTIVATED" << std::endl;
         //construct the file extension
         std::string ext = path.substr(dot + 1);
 
@@ -235,7 +236,7 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
             if (ext == location.cgi_extension[i])
             {
                 //file should be executed as CGI
-                return generate_cgi_response(req, path, location);
+                return generate_cgi_response(path, req, location);
             }
         }
     }

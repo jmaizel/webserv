@@ -526,11 +526,11 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
             if (ext == location.cgi_extension[i])
             {
                 //file should be executed as CGI
-                return generate_cgi_response(req, path, location);
+                return generate_cgi_response(path, req, location);
             }
         }
     }
-    
+
     //if it is a file that already exists check for permission and ovewrite
     return (handle_file_response(path, location, req.getBody(), 2));
 }

@@ -104,11 +104,11 @@ void ft_execute_cgi_child(const std::string& script_path, const HttpRequest& req
         script_name = script_path;
     }
 
-        char *args[] = {const_cast<char*>(interpreter.c_str()), 
-                        const_cast<char*>(script_name.c_str()), NULL};
-        execvp(interpreter.c_str(), args);
-        
-        exit(1);
+    char *args[] = {const_cast<char*>(interpreter.c_str()), 
+                    const_cast<char*>(script_name.c_str()), NULL};
+    execvp(interpreter.c_str(), args);
+    
+    exit(1);
 }
 
 //parser les headers CGI et créer la réponse
@@ -220,13 +220,18 @@ HttpResponse ft_create_cgi_error(int code, const std::string& reason, const std:
 }
 
 //fonction principale pour exécuter un script CGI - retourne HttpResponse
-HttpResponse ft_execute_cgi(const std::string& script_path, const HttpRequest& request, 
-                           const std::string& server_name, int server_port)
+HttpResponse Server::generate_cgi_response(const std::string& script_path, const HttpRequest& request, LocationBloc &location)
 {
+    //check permissions
+    if (access(script_path.c_str(), X_OK) < 0)
+    {
+        return generate_error_response(403, "Forbidden", "You do not have to necessary permissions", location);
+    }
+
     int pipe_in[2], pipe_out[2];
 
     if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1)
-        return ft_create_cgi_error(500, "Internal Server Error", "Failed to create pipes for CGI execution");
+        return generate_error_response(403, "Forbidden", "Pipe failed", location);
 
     pid_t pid = fork();
     if (pid == -1)
@@ -235,12 +240,12 @@ HttpResponse ft_execute_cgi(const std::string& script_path, const HttpRequest& r
         close(pipe_in[1]);
         close(pipe_out[0]); 
         close(pipe_out[1]);
-        return ft_create_cgi_error(500, "Internal Server Error", "Failed to fork process for CGI execution");
+        return generate_error_response(403, "Forbidden", "Fork failed", location);
     }
 
     if (pid == 0)
     {
-        ft_execute_cgi_child(script_path, request, server_name, server_port, pipe_in, pipe_out);
+        ft_execute_cgi_child(script_path, request, this->_name, this->_listen, pipe_in, pipe_out);
     }
 
     //parent
@@ -270,7 +275,8 @@ HttpResponse ft_execute_cgi(const std::string& script_path, const HttpRequest& r
     waitpid(pid, &status, 0);
 
     if (WEXITSTATUS(status) != 0)
-        return ft_create_cgi_error(500, "Internal Server Error", "CGI script execution failed");
+        return generate_error_response(403, "Forbidden", "CGI execution failed", location);
 
+    //NO ADD LOCATION
     return ft_build_cgi_response(cgi_output);
 }

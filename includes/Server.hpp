@@ -105,5 +105,5 @@ class Server
         HttpResponse    generate_error_response(int code, const std::string &reason, const std::string &details, LocationBloc &location);
         HttpResponse    generate_custom_error_response(int code, LocationBloc &location);
         HttpResponse    generate_redirect_response(const std::vector<std::string> &redirect, LocationBloc &location);
-        HttpResponse    generate_cgi_response(HttpRequest &req, const std::string &path, LocationBloc &location);
+        HttpResponse    generate_cgi_response(const std::string& script_path, const HttpRequest& request, LocationBloc &location);
 };

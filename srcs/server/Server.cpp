@@ -157,6 +157,8 @@ void    Server::print()
         std::cout << "redirect: " << this->_redirect[0] <<  std::endl;
     if (this->_redirect.size() == 2)
         std::cout << "redirect: " << this->_redirect[0] << " " << this->_redirect[1] <<  std::endl;
+    if (this->_cgi_extension.size() == 1)
+        std::cout << "CGI: " << this->_cgi_extension[0] <<  std::endl;
     if (this->_error_page.size() > 0)
     {
         std::cout << "error page: ";
