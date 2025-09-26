@@ -214,6 +214,7 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
     std::map<std::string, std::string> content_received;
     size_t start = 0;
     int files_created = 0;
+    (void)path;
 
     try 
     {

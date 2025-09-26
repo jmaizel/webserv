@@ -49,6 +49,7 @@ void    ServerMonitor::print()
 
 void ServerMonitor::handle_sigint(int signum)
 {
+    (void)signum;
     std::cout << "\nSIGINT received, shutting down servers...\n";
     ServerMonitor::_flag = -1;
 }
@@ -176,7 +177,7 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
             (*i)++;
         }
         std::cout << "location key value : ";
-        for (int j = 0; j < key_values.size(); ++j)
+        for (size_t j = 0; j < key_values.size(); ++j)
             std::cout << key_values[j] << " ";
         std::cout << std::endl;
         if (key_values.empty())
@@ -195,7 +196,7 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
         else if (key_values[0] == "allowed_methods")
         {
             location.allowed_methods.clear();
-            for (int l = 1; l < key_values.size(); ++l)
+            for (size_t l = 1; l < key_values.size(); ++l)
                 location.allowed_methods.push_back(key_values[l]);
         }
         else if (key_values[0] == "client_max_body_size")
@@ -289,7 +290,7 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
             i++;
         }
         std::cout << "server key value : ";
-        for (int j = 0; j < key_values.size(); ++j)
+        for (size_t j = 0; j < key_values.size(); ++j)
             std::cout << key_values[j] << " ";
         std::cout << std::endl;
 
@@ -302,7 +303,7 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         if (key_values[0] == "allowed_methods")
         {
             sbloc.allowed_methods.clear();
-            for (int l = 1; l < key_values.size(); ++l)
+            for (size_t l = 1; l < key_values.size(); ++l)
                 sbloc.allowed_methods.push_back(key_values[l]);
         }
         else if (key_values[0] == "listen")
@@ -345,11 +346,12 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         }
         else if (key_values[0] == "return")
         {
+            size_t test;
             if (key_values.size() < 2)
                 throw std::runtime_error("return: missing status code");
             if (key_values.size() > 3)
                 throw std::runtime_error("return: too may parameters");
-            try{size_t test = safe_atosize_t(key_values[1]);}
+            try{test = safe_atosize_t(key_values[1]);}
                 catch (std::exception &e) {throw std::runtime_error(key_values[1] + ": not a valid error code");}
             sbloc.redirect.push_back(key_values[1]);
             if (key_values.size() == 3)
@@ -538,7 +540,7 @@ void    ServerMonitor::parse()
     std::vector<std::string>    tokens;
 
     //opening file
-    std::ifstream   file(_config);
+    std::ifstream   file(_config.c_str());
     if (!file.is_open())
         throw std::runtime_error(_config + ": failed to open");
     //constructing string containing everything
@@ -555,7 +557,7 @@ void    ServerMonitor::parse()
     //tokenizing the whole string
     std::cout << "TOKENS : ";
     tokens = tokenize(trimmed);
-    for (int i = 0; i < tokens.size(); ++i)
+    for (size_t i = 0; i < tokens.size(); ++i)
             std::cout << tokens[i] << " ";
     std::cout << "\n" << std::endl;
     
@@ -580,7 +582,7 @@ void    ServerMonitor::parse()
         }
 
         std::cout << "SERVER BLOCK" << std::endl;
-        for (int j = 0; j < vserver.size(); ++j)
+        for (size_t j = 0; j < vserver.size(); ++j)
             std::cout << vserver[j] << std::endl;
         std::cout << std::endl << std::endl;
 

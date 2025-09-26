@@ -24,14 +24,22 @@ body(optional)  {"username":"harold","password":"42"}
 
 */
 
-HttpRequest::HttpRequest() : _version(""), _headers(), _body(""), _query_string(""), _flag(0), _target("")
+HttpRequest::HttpRequest() :
+    _buffer(""),
+    _query_string(""),
+    _method(""),
+    _target(""),
+    _version(""),
+    _headers(),
+    _body(""),
+    _flag(0)
 {
 
 }
 
 HttpRequest::HttpRequest(const HttpRequest &copy)
 {
-
+    (void)copy;
 }
 
 HttpRequest::~HttpRequest()

@@ -45,10 +45,10 @@ HttpResponse Server::generate_success_response(int code, const std::string &reas
     res.setStatusCode(code);
     res.setReason(reason);
 
-    std::string body = "<html><body><h1>" + std::to_string(code) + " " + reason + "</h1><p>" + details + "</p></body></html>";
+    std::string body = "<html><body><h1>" + to_string98(code) + " " + reason + "</h1><p>" + details + "</p></body></html>";
     
     res.setHeaders("Content-Type", "text/html");
-    res.setHeaders("Content-Length", std::to_string(body.size()));
+    res.setHeaders("Content-Length", to_string98(body.size()));
     res.setHeaders("Connection", "close");
     res.setBody(body);
 
@@ -79,7 +79,7 @@ HttpResponse Server::generate_redirect_response(const std::vector<std::string> &
              << "</body></html>";
 
         res.setBody(body.str());
-        res.setHeaders("Content-Length", std::to_string(body.str().size()));
+        res.setHeaders("Content-Length", to_string98(body.str().size()));
         return res;
     }
 
@@ -99,7 +99,7 @@ HttpResponse Server::generate_get_success_response(int code, const std::string &
     res.setReason(reason);
     
     res.setHeaders("Content-Type", "text/html");
-    res.setHeaders("Content-Length", std::to_string(body.size()));
+    res.setHeaders("Content-Length", to_string98(body.size()));
     res.setHeaders("Connection", "close");
     res.setBody(body);
 
@@ -163,7 +163,7 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
             res.setStatusCode(code);
             res.setReason(get_reason_phrase(code));
             res.setHeaders("Content-Type", "text/html");
-            res.setHeaders("Content-Length", std::to_string(body.size()));
+            res.setHeaders("Content-Length", to_string98(body.size()));
             res.setHeaders("Connection", "close");
             res.setBody(body);
             return (res);
@@ -187,10 +187,10 @@ HttpResponse Server::generate_error_response(int code, const std::string &reason
         res.setStatusCode(code);
         res.setReason(reason);
 
-        std::string body = "<html><body><h1>" + std::to_string(code) + " " + reason + "</h1><p>" + details + "</p></body></html>";
+        std::string body = "<html><body><h1>" + to_string98(code) + " " + reason + "</h1><p>" + details + "</p></body></html>";
 
         res.setHeaders("Content-Type", "text/html");
-        res.setHeaders("Content-Length", std::to_string(body.size()));
+        res.setHeaders("Content-Length", to_string98(body.size()));
         res.setHeaders("Connection", "close");
         res.setBody(body);
     }
@@ -230,8 +230,8 @@ std::string Server::get_ressource_path(const std::string &target, const Location
     const std::string   root = loc.root;
     std::cout << loc_prefix << " " << root << " " << target << std::endl;
 
-    //hardcode /
-    
+    //hardcoded /
+
     //strip common part to isolate the relative path
     std::string relative;
     if (target.size() >= loc_prefix.size())
@@ -240,7 +240,11 @@ std::string Server::get_ressource_path(const std::string &target, const Location
     //concatenate root and relative path to get full path
     std::string full_path = root;
     if (!relative.empty())
+    {
+        if (!full_path.empty() && full_path[full_path.size() - 1] != '/')
+            full_path += '/';
         full_path += relative;
+    }
 
     return full_path;
 }

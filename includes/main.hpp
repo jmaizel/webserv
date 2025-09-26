@@ -31,3 +31,11 @@ int                         get_closing_bracket_index(std::string &str);
 std::string                 commenttrim(std::string &str);
 size_t                      safe_atosize_t(const std::string &str);
 std::string                 trimmer(std::string &str);
+
+template <typename T>
+std::string to_string98(const T &value)
+{
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}

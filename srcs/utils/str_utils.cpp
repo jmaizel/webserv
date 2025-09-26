@@ -12,6 +12,8 @@
 
 #include "../../includes/main.hpp"
 
+#include <sstream>
+#include <string>
 
 std::string trimmer(std::string &str)
 {
@@ -62,7 +64,7 @@ std::vector<std::string> ft_split(const std::string &line, const std::string &se
 int get_closing_bracket_index(std::string &str)
 {
     int     count = 1;
-    int     i = 7;
+    size_t     i = 7;
 
     while (i < str.size())
     {
@@ -143,7 +145,7 @@ std::string brackettrim(std::string &line)
         {
             if (i != 0 && (line[i - 1] == '}' || line[i - 1] == '{' || line[i - 1] == ';'))
                 continue ;
-            else if ((i != line.size() - 1) && (line[i + 1] == '}' || line[i + 1] == '{') || line[i + 1] == ';')
+            else if ((i != line.size() - 1) && ((line[i + 1] == '}' || line[i + 1] == '{') || line[i + 1] == ';'))
                 continue ;
             str << line[i];
         }

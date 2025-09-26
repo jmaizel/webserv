@@ -23,14 +23,19 @@ body        <html><h1>Hello World</h1></html>
 
 */
 
-HttpResponse::HttpResponse() : _version(""), _headers(), _statusCode(0), _reason(""), _body("")
+HttpResponse::HttpResponse() :
+    _version(""),
+    _statusCode(0),
+     _reason(""),
+    _headers(),
+    _body("")
 {
 
 }
 
 HttpResponse::HttpResponse(const HttpRequest &copy)
 {
-
+    (void)copy;
 }
 
 HttpResponse::~HttpResponse()

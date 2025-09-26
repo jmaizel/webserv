@@ -16,15 +16,14 @@ LocationBloc::LocationBloc() :
     path("/"),
     root("www/"),
     allowed_methods(1, "GET"),
+    redirect(),
+    error_page(),
     client_max_body_size(1048576),
     index("index.html"),
-    autoindex(false),
     upload_path("upload/"),
     upload_enable(false),
-    redirect()
-{
-
-}
+    autoindex(false)
+{}
 
 LocationBloc::~LocationBloc()
 {
@@ -55,13 +54,13 @@ ServerBloc::ServerBloc() :
     index("index.html"),
     listen(-1),
     allowed_methods(1, "GET"),
+    redirect(),
+    error_page(),
     client_max_body_size(1048576),
     autoindex(false),
-    locations(),
-    upload_path(""),
     upload_enable(false),
-    redirect(),
-    error_page()
+    locations(),
+    upload_path("")
 {
 
 }

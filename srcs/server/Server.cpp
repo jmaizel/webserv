@@ -18,15 +18,15 @@ Server::Server()
       _name("localhost"),
       _index("index.html"),
       _autoindex(false),
+      _upload_enable(false),
+       _upload_path(""),
       _allowed_methods(1, "GET"),
+      _redirect(),
+      _error_page(),
       _client_max_body_size(1000000),
       _locations(),
       _server_fd(-1),
-      _max_fd(-1),
-      _redirect(),
-      _upload_path(""),
-      _upload_enable(false),
-      _error_page()
+      _max_fd(-1)
 {
     std::memset(&_address, 0, sizeof(_address));
     FD_ZERO(&_read_fds);
@@ -38,20 +38,21 @@ Server::Server()
 
 
 Server::Server(ServerBloc &s)
-    : _root(s.root),
+    :
+     _listen(s.listen), 
+    _root(s.root),
     _name(s.name),
     _index(s.index),
     _autoindex(s.autoindex),
+    _upload_enable(s.upload_enable),
+    _upload_path(s.upload_path),
     _allowed_methods(s.allowed_methods),
+     _redirect(s.redirect),
+    _error_page(s.error_page),
     _client_max_body_size(s.client_max_body_size),
     _locations(s.locations),
-    _listen(s.listen),
     _server_fd(-1),
-    _max_fd(-1),
-    _redirect(s.redirect),
-    _upload_path(s.upload_path),
-    _upload_enable(s.upload_enable),
-    _error_page(s.error_page)
+    _max_fd(-1)
 {
     std::memset(&_address, 0, sizeof(_address));
     FD_ZERO(&_read_fds);
@@ -114,7 +115,7 @@ void Server::init()
     if (bind(_server_fd, (struct sockaddr*)&_address, sizeof(_address)) < 0)
     {
         close(_server_fd);
-        throw std::runtime_error("bind failed for port " + std::to_string(_listen));
+        throw std::runtime_error("bind failed for port " + to_string98(_listen));
     }
 
     //start listening -> port opened

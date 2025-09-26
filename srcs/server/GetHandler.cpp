@@ -186,7 +186,7 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
     if (S_ISDIR(st.st_mode))
     {
         //look for the default page. if it exists then diplay that
-        std::string index_path = path + location.index;
+        std::string index_path = path + "/" + location.index;
         struct stat st_index;
 
         //checks existence of the index file
