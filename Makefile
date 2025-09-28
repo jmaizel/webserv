@@ -23,11 +23,12 @@ SRC =	srcs/main.cpp \
 		srcs/server/ServerMonitor.cpp \
 		srcs/utils/str_utils.cpp \
 		srcs/http/HttpRequest.cpp \
-		srcs/http/HttpResponse.cpp
+		srcs/http/HttpResponse.cpp \
+		srcs/http/Client.cpp
 
 OBJ = ${SRC:.cpp=.o}
 CC = c++ 
-CFLAGS = -Wall -Wextra -Werror -std=c++98
+CFLAGS = -Wall -Wextra -Werror -fsanitize=address -g -std=c++98
 CXX = $(CC) $(CFLAGS)
 
 all : ${NAME}

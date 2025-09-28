@@ -27,13 +27,16 @@ Server::Server()
       _client_max_body_size(1000000),
       _locations(),
       _server_fd(-1),
-      _max_fd(-1)
+      _max_fd(-1),
+      _client_buffers()
 {
     std::memset(&_address, 0, sizeof(_address));
     FD_ZERO(&_read_fds);
     FD_ZERO(&_write_fds);
     FD_ZERO(&_master_fds);
     _client_fds.clear();
+    _client_buffers.clear();
+    _clients_timeout.clear();
 }
 
 
@@ -61,6 +64,8 @@ Server::Server(ServerBloc &s)
     FD_ZERO(&_write_fds);
     FD_ZERO(&_master_fds);
     _client_fds.clear();
+    _client_buffers.clear();
+    _clients_timeout.clear();
 }
 
 
@@ -78,6 +83,7 @@ void Server::shutdown()
             close(_client_fds[i]);
     }
     _client_fds.clear();
+    _client_buffers.clear();
 
     //closing listening socket
     if (_server_fd >= 0)
@@ -217,14 +223,30 @@ void Server::accept_new_client(void)
         return;
     }
 
+    if (_client_fds.size() >= MAX_CLIENTS)
+    {
+        //TODO add the default page if exist!
+        std::string res =
+            "HTTP/1.1 503 Service Unavailable\r\n"
+            "Connection: close\r\n"
+            "Content-Length: 0\r\n"
+            "\r\n";
+        send(client_fd, res.c_str(), res.size(), 0);
+        close(client_fd);
+        std::cout << "Refused client (server full) on " << _name << std::endl;
+        return;
+    }
+
     //add to clients in the server
     FD_SET(client_fd, &_master_fds);
     _client_fds.push_back(client_fd);
+    _client_buffers[client_fd] = std::string("");
+    _clients_timeout[client_fd] = time(NULL);
     
     if (client_fd > _max_fd)
         _max_fd = client_fd;
 
-    std::cout << "New client connected to server " << _name << std::endl;
+    std::cout << "New client id=" << client_fd << " connected to server " << _name << std::endl;
 }
 
 HttpResponse    Server::generate_response(HttpRequest &req)
@@ -272,55 +294,145 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     return (res);
 }
 
+void Server::check_timeouts(int timeoutSec)
+{
+    time_t now = std::time(NULL);
+
+    std::map<int, time_t>::iterator it = _clients_timeout.begin();
+    while (it != _clients_timeout.end())
+    {
+        int fd = it->first;
+        time_t last = it->second;
+
+        if (now - last > timeoutSec)
+        {
+            //TODO
+            std::cout << "Client " << fd << " timed out" << std::endl;
+
+            //advance iterator before erasing
+            ++it;
+
+            disconnect_client(fd);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
 void Server::handle_client_request(int client_fd)
 {
-    //ToDo
-
-    //add a timer for a 408! timeout
-    //get the headers after a certain amount of time
-    //quikly get the content length than i can start comparing -> send 415
-    //have a default buffer length 
-    //every buffer check if there are some shit inside -> send 400
-    //what if i receive a bigger size than 4096????????????????????????????????????????
-
-    //start with getting the headers (set a certain amount of time)
-    //then parse the headers if something is wrong -> 400
-    //if too big -> 415
-    //if took too long -> 408
-    
-    //THEN get the rest of body
-    //set also a timer -> 408
-    //if too big -> 415
-    //then check for everything and validate it for treatment
-
     char buffer[4096];
-    ssize_t bytes_read = recv(client_fd, buffer, 4095, 0);
-    
-    //if recv failed or nothing to read
-    if (bytes_read <= 0)
+    //const int HEADER_TIMEOUT = 60;
+    //const int BODY_TIMEOUT   = 60;
+
+    //read headers
+    //if (time(NULL) - start > HEADER_TIMEOUT)
+    //{
+        //add error
+    //    std::cout << "recv disconnection : timeout " << std::endl;
+    //    disconnect_client(client_fd);
+    //    return;
+    //}
+
+    ssize_t n = recv(client_fd, buffer, sizeof(buffer), 0);
+    //if we received bits
+    std::map<int, std::string>::iterator itc;
+    itc = _client_buffers.find(client_fd);
+    if (itc == _client_buffers.end())
+        return;
+    if (itc->second.find("\r\n\r\n") == std::string::npos)
     {
+        if (n > 0)
+        {
+            itc->second.append(buffer, n);
+            std::cout << "Client: " << client_fd << ": Constructed Request: " << itc->second << std::endl;
+            if (itc->second.find("\r\n\r\n") == std::string::npos)
+                return;
+        }
+        //if a client terminated the connexion (signal, EOF, ect...)
+        else if (n == 0)
+        {
+            std::cout << "Client id=" << itc->first << " " << itc->second << std::endl;
+            disconnect_client(client_fd);
+            return;
+        }
+        //non blocking mode or recv error
+        else
+        {
+            std::cout << "NON BLOCKING MODE" << std::endl;
+            return;
+            //add recv error
+        }
+    }
+    std::cout << "OUT OF HEADERS " << std::endl;
+
+    HttpRequest req;
+    try { req.parse(itc->second); }
+    catch (std::exception &e)
+    {
+        //send 400 Bad Request
         disconnect_client(client_fd);
         return;
     }
 
-    buffer[bytes_read] = '\0';
-    std::cout << "Received: " << buffer << std::endl;
+    //If POST read body
+    if (req.getMethod() == "POST")
+    {
+        std::map<std::string, std::string> headers = req.getHeaders();
+        std::map<std::string, std::string>::iterator ith = headers.find("Content-Length");
 
-    //create a http request object
-    HttpRequest req;
-    //parse the request based on the buffer
-    req.parse(buffer);
-    req.print();
+        if (ith != headers.end())
+        {
+            size_t content_length = safe_atosize_t(ith->second.c_str());
+            size_t header_end = ith->second.find("\r\n\r\n") + 4;
+            itc->second = ith->second.substr(header_end);
 
-    //create a http response object
+            if (itc->second.size() < content_length)
+            {
+                ssize_t n = recv(client_fd, buffer, sizeof(buffer), 0);
+
+                //if we received information
+                if (n > 0)
+                {
+                    itc->second.append(buffer, n);
+                    std::cout << "Constructed Body: " << itc->second << std::endl;
+                    if (itc->second.size() < content_length)
+                        return;
+                }
+                //client disconnected (signal, EOF...)
+                if (n == 0)
+                {
+                    disconnect_client(client_fd);
+                    return;
+                }
+                else
+                {
+                    std::cout <<  "NON BLOCKING MODE" << std::endl;
+                    return ;
+                }
+            }
+            req.setBody(itc->second.substr(0, content_length));
+        }
+        else if ((ith = headers.find("Transfer-Encoding")) != headers.end() && ith->second == "chunked")
+        {
+            //to be implemented
+            disconnect_client(client_fd);
+            return;
+        }
+        else
+        {
+            //send 400 no chunked or content length so no way to parse
+            disconnect_client(client_fd);
+            return;
+        }
+    }
+
+    //generate response
     HttpResponse res = generate_response(req);
-    res.print();
-    
-    //get the actual string response
     std::string response = res.toStr();
-
-    //send the response to the client fd
-    send(client_fd, response.c_str(), response.length(), 0);
+    send(client_fd, response.c_str(), response.size(), 0);
     disconnect_client(client_fd);
 }
 
@@ -336,6 +448,8 @@ void Server::disconnect_client(int client_fd)
         if (_client_fds[i] == client_fd)
         {
             _client_fds.erase(_client_fds.begin() + i);
+            _client_buffers.erase(client_fd);
+            _clients_timeout.erase(client_fd);
             break;
         }
         i++;

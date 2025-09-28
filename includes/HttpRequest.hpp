@@ -42,6 +42,7 @@ class HttpRequest
 
         //private methods
         bool                        is_valid_request()const;
+        bool                        is_valid_headers()const;
         std::vector<std::string>    tokenize(const std::string buffer)const;
 
     public:
@@ -52,6 +53,8 @@ class HttpRequest
         //destructors
         ~HttpRequest();
 
+        //setters
+        void                                        setBody(const std::string &str);
         //getters
         const std::string                           &getQueryString()const;
         const std::string                           &getMethod()const;

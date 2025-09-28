@@ -99,14 +99,16 @@ void ServerMonitor::run()
 
     fd_set read_fds;
 
-    //main loop
+    //main loop01236
     while (ServerMonitor::_flag == 0)
     {
         read_fds = this->_master_fds; //copy master into read_fds
 
-        std::cout << "\nWaiting for clients..." << std::endl;
+        struct timeval tv;
+        tv.tv_sec  = 1;
+        tv.tv_usec = 0;
 
-        int activity = select(this->_max_fd + 1, &read_fds, NULL, NULL, NULL);
+        int activity = select(this->_max_fd + 1, &read_fds, NULL, NULL, &tv);
         //for signal handling
         if (errno == EINTR)
             break ;
@@ -145,6 +147,7 @@ void ServerMonitor::run()
                     }
                 }
             }
+            _servers[i].check_timeouts(TIMEOUT_SEC);
         }
     }
 }
@@ -362,6 +365,7 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
             sbloc.redirect.push_back(key_values[1]);
             if (key_values.size() == 3)
                 sbloc.redirect.push_back(key_values[2]);
+            (void)test;
         }
         else if (key_values[0] == "upload_path")
         {

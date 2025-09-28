@@ -17,10 +17,16 @@
 #include "Server.hpp"
 #include "ServerMonitor.hpp"
 #include "Config.hpp"
+#include "Client.hpp"
 #include <stdexcept>
 #include <limits>
 #include <sys/types.h>
 #include <dirent.h>
+
+#define HEADER_TIMEOUT 60
+#define BODY_TIMEOUT 60
+#define MAX_CLIENTS 1000
+#define TIMEOUT_SEC 30
 
 std::string                 strtrim(std::string &str);
 std::string                 brackettrim(std::string &line);

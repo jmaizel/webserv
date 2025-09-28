@@ -158,10 +158,52 @@ std::vector<std::string> HttpRequest::tokenize(const std::string buffer)const
 }
 
 
-bool    HttpRequest::is_valid_request()const
+bool    HttpRequest::is_valid_headers()const
 {
-    //ToDo
+    //required fields
+    if (_version.empty() || _method.empty() || _target.empty())
+        throw std::runtime_error("Missing required request line");
+    //target must start with /
+    if (_target[0] != '/')
+        throw std::runtime_error("Invalid request target");
+    //HTTP version
+    if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
+        throw std::runtime_error("HTTP Version Not Supported");
+
+    //host header required in HTTP/1.1
+    if (_version == "HTTP/1.1")
+    {
+        std::map<std::string, std::string>::const_iterator it = _headers.find("Host");
+        if (it == _headers.end() || it->second.empty())
+            throw std::runtime_error("400 Host header required in HTTP/1.1");
+    }
+
+    //Content-Length check
+    std::map<std::string, std::string>::const_iterator it = _headers.find("Content-Length");
+    if (it != _headers.end())
+    {
+        try { size_t len = safe_atosize_t(it->second); (void)len;}
+            catch (std::exception &e) {throw std::runtime_error("400 Invalid Content-Length");}
+    }
+
+    //transfer-Encoding rules
+    if (_version == "HTTP/1.0")
+    {
+        if (_headers.find("Transfer-Encoding") != _headers.end())
+            throw std::runtime_error("400 Transfer-Encoding not allowed in HTTP/1.0");
+    }
+    else if (_version == "HTTP/1.1")
+    {
+        it = _headers.find("Transfer-Encoding");
+        if (it != _headers.end() && it->second == "chunked" && _headers.find("Content-Length") != _headers.end())
+            throw std::runtime_error("400 Cannot have both Content-Length and chunked encoding");
+    }
     return (true);
+}
+
+void    HttpRequest::setBody(const std::string &str)
+{
+    this->_body = str;
 }
 
 void    HttpRequest::parse(const std::string &buffer)
@@ -174,36 +216,28 @@ void    HttpRequest::parse(const std::string &buffer)
 
     //check if there is a /r/n after the headers
     if (buffer.find("\r\n\r\n") == std::string::npos)
-    {
-        this->_flag = 400;
-        return ;
-    }
+        throw std::runtime_error("Missing CRLFCRLF after headers");
+
     tokens = tokenize(buffer);
     //check if it is not empty
     if (tokens.size() < 2)
-    {
-        this->_flag = 400;
-        return ;
-    }
-    
+        throw std::runtime_error("Empty request");
+
     //split the first line
     elems = ft_split(tokens[0], " ");
     //check if there are 3 elements
     if (elems.size() < 3)
-    {
-        this->_flag = 400;
-        return ;
-    }
+        throw std::runtime_error("Invalid request line");
+
     this->_method = elems[0];
 
     //the uri can have a query string
-    std::cout << "HERE" << elems[1] << std::endl;
     if (elems[1].find("?") != std::string::npos)
     {
         size_t pos = elems[1].find_first_of("?");
         this->_target = normalize_uri(elems[1].substr(0, pos));
         if (this->_target.empty())
-            this->_flag = 400;
+            throw std::runtime_error("Invalid URI");
         this->_query_string = elems[1].substr(pos + 1); 
     }
     else
@@ -227,26 +261,12 @@ void    HttpRequest::parse(const std::string &buffer)
         }
         pos = (tokens[i]).find_first_of(":");
         if (pos == std::string::npos)
-        {
-            this->_flag = 400;
-            return ;
-        }
+            throw std::runtime_error("Malformed header line");
+
         key = (tokens[i]).substr(0, pos);
         value = (tokens[i]).substr(pos + 2);
         (this->_headers)[key] = value;
     }
-
-    //check the body here it gets complicated so as of now just make it work
-    //you have to check connexion and content length to validate the request
-
-    //fill up the rest
-    while (i < tokens.size())
-    {
-        this->_body += tokens[i];
-        i++;
-    }
-
-    //check if valid
-    if (!is_valid_request())
-        this->_flag = 400;
+    try {is_valid_headers();}
+    catch(std::exception &e) {throw;}
 }
