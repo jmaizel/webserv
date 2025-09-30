@@ -215,7 +215,6 @@ void Server::accept_new_client(void)
     int client_fd = accept(_server_fd, (struct sockaddr*)&client_addr, &client_len);
     if (client_fd < 0)
         return; //no clients to accept
-
     //make the client non blocking
     if (fcntl(client_fd, F_SETFL, O_NONBLOCK) < 0)
     {
@@ -310,6 +309,8 @@ void Server::check_timeouts(int timeoutSec, int client)
     time_t now = std::time(NULL);
 
     std::map<int, time_t>::iterator it = _clients_timeout.find(client);
+    if (it == _clients_timeout.end())
+        return ;
     int client_fd = it->first;
     time_t last = it->second;
     if (now - last > timeoutSec)
@@ -323,108 +324,157 @@ void Server::check_timeouts(int timeoutSec, int client)
 void Server::handle_client_request(int client_fd)
 {
     char buffer[4096];
-
-    ssize_t n = recv(client_fd, buffer, sizeof(buffer), 0);
-
+    
+    //get the client buffer
     std::map<int, std::string>::iterator itc;
     itc = _client_buffers.find(client_fd);
     if (itc == _client_buffers.end())
         return;
-    if (itc->second.find("\r\n\r\n") == std::string::npos)
-    {
-        if (n > 0)
-        {
-            itc->second.append(buffer, n);
-            std::cout << "Client: " << client_fd << ": Constructed Request: " << itc->second << std::endl;
-            reset_timeout(client_fd);
-            if (itc->second.find("\r\n\r\n") == std::string::npos)
-                return;
-        }
-        //if a client terminated the connexion (signal, EOF, ect...)
-        else if (n == 0)
-        {
-            std::cout << "Client id=" << itc->first << " " << itc->second << std::endl;
-            disconnect_client(client_fd);
-            return;
-        }
-        //non blocking mode or recv error
-        else
-        {
-            std::cout << "NON BLOCKING MODE" << std::endl;
-            return;
-            //add recv error
-        }
-    }
-    std::cout << "OUT OF HEADERS " << std::endl;
+    std::string &client_buffer = itc->second;
 
-    HttpRequest req;
-    try { req.parse(itc->second); }
-    catch (std::exception &e)
+    //read the client information
+    ssize_t n = recv(client_fd, buffer, sizeof(buffer), 0);
+
+    //if the client interupted the connection
+    if (n == 0)
     {
-        //send 400 Bad Request
+        std::cout << "Client: " << itc->first << " interrupted the connection" << itc->second << std::endl;
         disconnect_client(client_fd);
         return;
     }
 
-    //If POST read body
+    //non blocking mode (recv blocks normally)
+    else if (n < 0)
+    {
+        //non blocking
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return;
+        //actual recv error
+        else
+            disconnect_client(client_fd);
+    }
+
+    //append client data
+    else
+    {
+        //does the buffer already have the headers?
+        if (client_buffer.find("\r\n\r\n") == std::string::npos)
+        {
+            client_buffer.append(buffer, n);
+            std::cout << "Client: " << client_fd << ": Constructed Request: " << client_buffer << std::endl;
+            //if we still don't have it send it back to select
+            if (client_buffer.find("\r\n\r\n") == std::string::npos)
+                return;
+            //are the headers valid
+            reset_timeout(client_fd);
+        }
+        //are the headers valid
+        HttpRequest req;
+        try { req.parse(itc->second); }
+        catch (std::exception &e)
+        {
+            //TODO send 400 Bad Request
+            disconnect_client(client_fd);
+            return;
+        }
+
+        //do we have all the body (Content-Lenght)
+        if (req.getMethod() == "POST")
+        {
+            //get content-length
+            std::map<std::string, std::string> headers = req.getHeaders();
+            std::map<std::string, std::string>::iterator ith = headers.find("Content-Length");
+            std::string body_buffer;
+
+            //if we have content-length
+            if (ith != headers.end())
+            {
+                size_t content_length = safe_atosize_t(ith->second.c_str());
+                size_t header_end = client_buffer.find("\r\n\r\n") + 4;
+                body_buffer = client_buffer.substr(header_end);
+
+                if (body_buffer.size() < content_length)
+                {
+                    body_buffer.append(buffer);
+                    client_buffer.append(buffer);
+                    std::cout << "Constructed Body: " << body_buffer << std::endl;
+                    //if we still don't have the buffer
+                    if (body_buffer.size() < content_length)
+                        return;
+                    reset_timeout(client_fd);
+                }
+            }
+            //if we have Transfer-Encoding
+            else if ((ith = headers.find("Transfer-Encoding")) != headers.end() && ith->second == "chunked")
+            {
+                //to be implemented
+                reset_timeout(client_fd);
+                //disconnect ATM
+                disconnect_client(client_fd);
+                return;
+            }
+            //if the body headers is messed up
+            else
+            {
+                //send 400 no chunked or content length so no way to parse
+                disconnect_client(client_fd);
+                return;
+            }
+        }
+    }
+
+    //generate the request based on the client buffer
+    HttpRequest req;
+    req.parse(client_buffer);
+
     if (req.getMethod() == "POST")
     {
         std::map<std::string, std::string> headers = req.getHeaders();
         std::map<std::string, std::string>::iterator ith = headers.find("Content-Length");
-
-        if (ith != headers.end())
-        {
-            size_t content_length = safe_atosize_t(ith->second.c_str());
-            size_t header_end = ith->second.find("\r\n\r\n") + 4;
-            itc->second = ith->second.substr(header_end);
-
-            if (itc->second.size() < content_length)
-            {
-                ssize_t n = recv(client_fd, buffer, sizeof(buffer), 0);
-
-                //if we received information
-                if (n > 0)
-                {
-                    itc->second.append(buffer, n);
-                    std::cout << "Constructed Body: " << itc->second << std::endl;
-                    reset_timeout(client_fd);
-                    if (itc->second.size() < content_length)
-                        return;
-                }
-                //client disconnected (signal, EOF...)
-                if (n == 0)
-                {
-                    disconnect_client(client_fd);
-                    return;
-                }
-                else
-                {
-                    std::cout <<  "NON BLOCKING MODE" << std::endl;
-                    return ;
-                }
-            }
-            req.setBody(itc->second.substr(0, content_length));
-        }
-        else if ((ith = headers.find("Transfer-Encoding")) != headers.end() && ith->second == "chunked")
-        {
-            //to be implemented
-            reset_timeout(client_fd);
-            disconnect_client(client_fd);
-            return;
-        }
-        else
-        {
-            //send 400 no chunked or content length so no way to parse
-            disconnect_client(client_fd);
-            return;
-        }
+        //works only for content length!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        size_t content_length = safe_atosize_t(ith->second.c_str());
+        size_t header_end = client_buffer.find("\r\n\r\n") + 4;
+        std::string body = client_buffer.substr(header_end);
+        req.setBody(body.substr(0, content_length));
     }
 
     //generate response
     HttpResponse res = generate_response(req);
     std::string response = res.toStr();
-    send(client_fd, response.c_str(), response.size(), 0);
-    disconnect_client(client_fd);
+
+    //decide keep-alive or close
+    bool keep_alive = true; // default for HTTP/1.1
+
+    std::map<std::string, std::string> headers = req.getHeaders();
+    std::map<std::string, std::string>::iterator ith = headers.find("Connection");
+    if (ith != headers.end())
+    {
+        std::string val = ith->second;
+        if (val == "close")
+            keep_alive = false;
+    }
+
+    //add connection header to response
+    if (keep_alive)
+        res.setHeaders("Connection", "keep-alive");
+    else
+        res.setHeaders("Connection", "close");
+
+    //send response to client
+    send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+
+    if (keep_alive)
+    {
+        //reset the timeout
+        reset_timeout(client_fd);
+        //reset the buffer
+        itc->second = std::string("");
+        std::cout << "Client kept alive" << std::endl;
+    }
+    else
+    {
+        disconnect_client(client_fd);
+    }
 }
 
 void Server::disconnect_client(int client_fd)

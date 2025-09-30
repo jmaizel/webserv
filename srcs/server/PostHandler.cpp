@@ -432,8 +432,8 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     //check if POST is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
-        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve DELETE method", location);
-    
+        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method", location);
+
     //check body size
     if(req.getBody().size() > location.client_max_body_size)
         return generate_error_response(405, "Method Not Allowed", "Body too large", location);
@@ -466,6 +466,10 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
     //if target exists but is a directory
     if (S_ISDIR(st.st_mode))
     {
+        //if upload not enabled
+        if (location.upload_enable == false)
+            return generate_error_response(403, "Forbidden", "Requested location doesn't allow uploads", location);
+            
         //check directory write and x permission
         if (access(path.c_str(), W_OK | X_OK) < 0)
         {

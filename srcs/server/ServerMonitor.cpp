@@ -122,7 +122,7 @@ void ServerMonitor::run()
                 throw std::runtime_error("Select Error");
         }
 
-        //loop through servers
+        //loop through servers 
         for (size_t i = 0; i < _servers.size(); i++)
         {
             int server_fd = _servers[i].get_server_fd();
@@ -144,6 +144,7 @@ void ServerMonitor::run()
             //loop through all potential client fds
             for (int fd = 0; fd <= this->_max_fd; fd++)
             {
+
                 //check client timeouts
                 if (_servers[i].is_client_fd(fd) && fd != server_fd)
                 {
@@ -153,11 +154,11 @@ void ServerMonitor::run()
                         FD_CLR(fd, &(this->_master_fds));
                     }
                 }
+
+                //check activities
                 if (FD_ISSET(fd, &read_fds) && fd != server_fd && _servers[i].is_client_fd(fd))
                 {
-                    std::cout << "Bonjour" << std::endl;
                     _servers[i].handle_client_request(fd);
-
                     if (!_servers[i].is_client_fd(fd))
                     {
                         FD_CLR(fd, &(this->_master_fds));
