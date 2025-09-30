@@ -13,15 +13,32 @@
 #include "../../includes/main.hpp"
 
 LocationBloc::LocationBloc() :
-    path("/"),
-    root("www/"),
-    allowed_methods(1, "GET"),
+    path(""),
+    root(""),
+    allowed_methods(),
     redirect(),
     error_page(),
     cgi_extension(),
-    client_max_body_size(1048576),
-    index("index.html"),
-    upload_path("upload/"),
+    client_max_body_size(-1),
+    index(""),
+    upload_path(""),
+    upload_enable(false),
+    autoindex(false),
+    upload_bool_present(false),
+    autoindex_bool_present(false),
+    client_max_body_size_present(false)
+{}
+
+LocationBloc::LocationBloc(ServerBloc &s) :
+    path("/"),
+    root(s.root),
+    allowed_methods(s.allowed_methods),
+    redirect(s.redirect),
+    error_page(s.error_page),
+    cgi_extension(s.cgi_extension),
+    client_max_body_size(s.client_max_body_size),
+    index(s.index),
+    upload_path(s.upload_path),
     upload_enable(false),
     autoindex(false)
 {}

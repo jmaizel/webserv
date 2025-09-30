@@ -16,6 +16,8 @@
 #include <vector>
 #include <map>
 
+struct ServerBloc;
+
 struct LocationBloc
 {
     std::string                 path;                  
@@ -28,8 +30,12 @@ struct LocationBloc
     std::string                 index;
     std::string                 upload_path;
     bool                        upload_enable;
-    bool                        autoindex;        
+    bool                        autoindex;
+    bool                        upload_bool_present;
+    bool                        autoindex_bool_present;
+    bool                        client_max_body_size_present;           
     LocationBloc();
+    LocationBloc(ServerBloc &s);
     ~LocationBloc();
     void    print();
 };

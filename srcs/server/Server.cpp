@@ -14,7 +14,7 @@
 
 Server::Server()
     : _listen(-1),
-      _root("./www"),
+      _root(""),
       _name("localhost"),
       _index("index.html"),
       _autoindex(false),
@@ -43,7 +43,7 @@ Server::Server()
 
 Server::Server(ServerBloc &s)
     :
-     _listen(s.listen), 
+    _listen(s.listen), 
     _root(s.root),
     _name(s.name),
     _index(s.index),
@@ -257,7 +257,7 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     std::string     method = req.getMethod();
     //get the target of the request
     std::string     target = req.getTarget();
-    //get the corresponding location of the request (there is always one, the default location /)
+    //get the corresponding location of the request (there is always one, the default server root
     std::map<std::string, LocationBloc>::iterator   it = find_best_location(target);
     LocationBloc location = it->second;
 
@@ -294,50 +294,38 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     return (res);
 }
 
-void Server::check_timeouts(int timeoutSec)
+void Server::reset_timeout(int client_fd)
+{
+    std::map<int, time_t>::iterator it = _clients_timeout.find(client_fd);
+    if (it != _clients_timeout.end())
+    {
+        it->second = std::time(NULL);
+        std::cout << "[DEBUG] Timeout reset for fd=" << client_fd << std::endl;
+    }
+}
+
+
+void Server::check_timeouts(int timeoutSec, int client)
 {
     time_t now = std::time(NULL);
 
-    std::map<int, time_t>::iterator it = _clients_timeout.begin();
-    while (it != _clients_timeout.end())
+    std::map<int, time_t>::iterator it = _clients_timeout.find(client);
+    int client_fd = it->first;
+    time_t last = it->second;
+    if (now - last > timeoutSec)
     {
-        int fd = it->first;
-        time_t last = it->second;
-
-        if (now - last > timeoutSec)
-        {
-            //TODO
-            std::cout << "Client " << fd << " timed out" << std::endl;
-
-            //advance iterator before erasing
-            ++it;
-
-            disconnect_client(fd);
-        }
-        else
-        {
-            ++it;
-        }
+        std::cout << "Client " << client_fd << " timed out" << std::endl;
+        //close + remove fd everywhere
+        disconnect_client(client_fd);
     }
 }
 
 void Server::handle_client_request(int client_fd)
 {
     char buffer[4096];
-    //const int HEADER_TIMEOUT = 60;
-    //const int BODY_TIMEOUT   = 60;
-
-    //read headers
-    //if (time(NULL) - start > HEADER_TIMEOUT)
-    //{
-        //add error
-    //    std::cout << "recv disconnection : timeout " << std::endl;
-    //    disconnect_client(client_fd);
-    //    return;
-    //}
 
     ssize_t n = recv(client_fd, buffer, sizeof(buffer), 0);
-    //if we received bits
+
     std::map<int, std::string>::iterator itc;
     itc = _client_buffers.find(client_fd);
     if (itc == _client_buffers.end())
@@ -348,6 +336,7 @@ void Server::handle_client_request(int client_fd)
         {
             itc->second.append(buffer, n);
             std::cout << "Client: " << client_fd << ": Constructed Request: " << itc->second << std::endl;
+            reset_timeout(client_fd);
             if (itc->second.find("\r\n\r\n") == std::string::npos)
                 return;
         }
@@ -398,6 +387,7 @@ void Server::handle_client_request(int client_fd)
                 {
                     itc->second.append(buffer, n);
                     std::cout << "Constructed Body: " << itc->second << std::endl;
+                    reset_timeout(client_fd);
                     if (itc->second.size() < content_length)
                         return;
                 }
@@ -418,6 +408,7 @@ void Server::handle_client_request(int client_fd)
         else if ((ith = headers.find("Transfer-Encoding")) != headers.end() && ith->second == "chunked")
         {
             //to be implemented
+            reset_timeout(client_fd);
             disconnect_client(client_fd);
             return;
         }
@@ -440,6 +431,8 @@ void Server::disconnect_client(int client_fd)
 {
     close(client_fd);
     FD_CLR(client_fd, &_master_fds);
+    _client_buffers.erase(client_fd);
+    _clients_timeout.erase(client_fd);
     
     //remove from client list
     size_t i = 0;
@@ -448,11 +441,9 @@ void Server::disconnect_client(int client_fd)
         if (_client_fds[i] == client_fd)
         {
             _client_fds.erase(_client_fds.begin() + i);
-            _client_buffers.erase(client_fd);
-            _clients_timeout.erase(client_fd);
             break;
         }
         i++;
     }
-    std::cout << "Client " << " disconnected from server " << _name << std::endl;
+    std::cout << "Client: " << client_fd << " disconnected from server " << _name << std::endl;
 }

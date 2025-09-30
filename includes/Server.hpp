@@ -91,7 +91,8 @@ class Server
 		bool    is_client_fd(int fd) const;
 		void    accept_new_client(void);
 		void    disconnect_client(int client_fd);
-        void    check_timeouts(int timeoutSec);
+        void    check_timeouts(int timeoutSec, int client);
+        void    reset_timeout(int client_fd);
 
         void    init();
         void    print();

@@ -110,10 +110,17 @@ void ServerMonitor::run()
 
         int activity = select(this->_max_fd + 1, &read_fds, NULL, NULL, &tv);
         //for signal handling
-        if (errno == EINTR)
-            break ;
         if (activity < 0)
-            throw std::runtime_error("Select Error");
+        {
+            if (errno == EINTR)
+                break ;
+            else if (errno == EBADF)
+                throw std::runtime_error("Invalid FD");
+            else if (errno == EINVAL)
+                throw std::runtime_error("Invalid timeval");
+            else
+                throw std::runtime_error("Select Error");
+        }
 
         //loop through servers
         for (size_t i = 0; i < _servers.size(); i++)
@@ -137,8 +144,18 @@ void ServerMonitor::run()
             //loop through all potential client fds
             for (int fd = 0; fd <= this->_max_fd; fd++)
             {
+                //check client timeouts
+                if (_servers[i].is_client_fd(fd) && fd != server_fd)
+                {
+                    _servers[i].check_timeouts(TIMEOUT_SEC, fd);
+                    if (!_servers[i].is_client_fd(fd))
+                    {
+                        FD_CLR(fd, &(this->_master_fds));
+                    }
+                }
                 if (FD_ISSET(fd, &read_fds) && fd != server_fd && _servers[i].is_client_fd(fd))
                 {
+                    std::cout << "Bonjour" << std::endl;
                     _servers[i].handle_client_request(fd);
 
                     if (!_servers[i].is_client_fd(fd))
@@ -147,7 +164,6 @@ void ServerMonitor::run()
                     }
                 }
             }
-            _servers[i].check_timeouts(TIMEOUT_SEC);
         }
     }
 }
@@ -206,17 +222,19 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
         {
             try{location.client_max_body_size = safe_atosize_t(key_values[1]);}
                 catch (std::exception &e) {throw std::runtime_error(key_values[0] + ": not a valid number");;}
+                location.client_max_body_size_present = true;
         }
         else if (key_values[0] == "autoindex")
         {
             if (key_values[1] == "on")
                 location.autoindex = true;
-             else if (key_values[1] == "off")
+            else if (key_values[1] == "off")
                 location.autoindex = false;
             else
             {
                 throw std::runtime_error(key_values[1] + ": unkown parameter");
             }
+            location.autoindex_bool_present = true;
         }
         else if (key_values[0] == "return")
         {
@@ -247,6 +265,7 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
             {
                 throw std::runtime_error(key_values[1] + ": unkown parameter");
             }
+            location.upload_bool_present = true;
         }
         else if (key_values[0] == "error_page")
         {
@@ -286,9 +305,71 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
     return (location);
 }
 
+void    validate_locations(ServerBloc &sbloc, std::map<std::string, LocationBloc> &locs)
+{
+    //first let's check that there is a default location /
+    std::map<std::string, LocationBloc>::iterator it;
+
+    //if not create it, it is mandatory so add it
+    it = locs.find("/");
+    if (it == locs.end())
+    {
+        LocationBloc default_loc_bloc(sbloc);
+        locs["/"] = default_loc_bloc;
+    }
+    //whatever is initialized in the default is overwritten by locs
+    for (it = locs.begin(); it != locs.end(); ++it)
+    {
+        //path will nevber be empty
+        if (it->second.root.empty())
+        {
+            it->second.root = sbloc.root;
+        }
+        if (it->second.allowed_methods.empty())
+        {
+            it->second.allowed_methods = sbloc.allowed_methods;
+        }
+        if (it->second.redirect.empty())
+        {
+            it->second.redirect = sbloc.redirect;
+        }
+        if (it->second.error_page.empty())
+        {
+            it->second.error_page = sbloc.error_page;
+        }
+        if (it->second.cgi_extension.empty())
+        {
+            it->second.cgi_extension = sbloc.cgi_extension;
+        }
+        if (it->second.client_max_body_size_present == false)
+        {
+            it->second.client_max_body_size = sbloc.client_max_body_size;
+        }
+        if (it->second.index.empty())
+        {
+            it->second.index = sbloc.index;
+        }
+        if (it->second.upload_path.empty())
+        {
+            it->second.upload_path = sbloc.upload_path;
+        }
+        if (it->second.upload_bool_present == false)
+        {
+            it->second.upload_enable = sbloc.upload_enable;
+        }
+        if (it->second.autoindex_bool_present == false)
+        {
+            it->second.autoindex = sbloc.autoindex;
+        }
+
+    }
+    sbloc.locations = locs; 
+}
+
 ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
 {
     std::vector<std::string>    key_values;
+    std::map<std::string, LocationBloc> locs;
     ServerBloc                  sbloc;
 
     for (size_t i = 1; i < tokens.size(); ++i)
@@ -350,7 +431,7 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         }
         else if (key_values[0] == "location")
         {
-            try { sbloc.locations[key_values[1]] = get_location_bloc(tokens, key_values[1], &i);}
+            try { locs[key_values[1]] = get_location_bloc(tokens, key_values[1], &i);}
             catch (std::exception &e){throw;}
         }
         else if (key_values[0] == "return")
@@ -417,12 +498,14 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         }
         key_values.clear();
     }
+    //went through all the tokens. now you need to validate the locations
+    validate_locations(sbloc, locs);
     return (sbloc);
 }
 
 bool    is_valid_server_bloc(ServerBloc &sbloc)
 {
-    //if there are no root or no listen ->error
+    //a minimal server has: listen, root
     if (sbloc.listen == -1)
         return (false);
     if (sbloc.root.empty())
@@ -481,9 +564,9 @@ bool ServerMonitor::valid_brackets(const std::vector<std::string> &tokens)
         if (depth < 0)
             throw std::runtime_error("config file: too many '}'");
     }
+
     if (depth != 0)
         throw std::runtime_error("config file: missing closing '}'");
-
 
     for (size_t i = 0; i < tokens.size(); ++i)
     {
@@ -616,5 +699,7 @@ void    ServerMonitor::parse()
             }
             catch (std::exception &e) {throw;}
         }
+        else
+            throw std::runtime_error("Server minimal requirements are : port and root");
     }
 }
