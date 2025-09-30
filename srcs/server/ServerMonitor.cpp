@@ -179,8 +179,6 @@ bool is_error_code(size_t code)
     return (code >= 400 && code <= 599);
 }
 
-
-
 LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string &pathi, size_t *i)
 {
     LocationBloc                location;
@@ -508,10 +506,24 @@ bool    is_valid_server_bloc(ServerBloc &sbloc)
 {
     //a minimal server has: listen, root
     if (sbloc.listen == -1)
-        return (false);
+        throw (std::runtime_error("Server has no listening port"));
     if (sbloc.root.empty())
-        return (false);
-    return (true);
+        throw (std::runtime_error("Server has no root"));
+    if (sbloc.upload_enable && sbloc.upload_path == "")
+        throw (std::runtime_error("Server has upload files enabled but no path"));
+
+    std::map<std::string, LocationBloc>::iterator it;
+    for (it = sbloc.locations.begin(); it != sbloc.locations.end(); ++it)
+    {
+        LocationBloc &loc = it->second;
+
+        if (loc.upload_enable && loc.upload_path.empty())
+        {
+            throw (std::runtime_error("Location " + it->first + " has upload enabled but no path"));
+        }
+    }
+
+    return true;
 }
 
 bool ServerMonitor::valid_semicolons(const std::vector<std::string> &tokens)
@@ -690,17 +702,14 @@ void    ServerMonitor::parse()
         vserver.clear();
 
         //check if it is valid. if so create an actual server
-        if (is_valid_server_bloc(sbloc))
-        {
-            //!this can fail when using sytem calls!
+        try{is_valid_server_bloc(sbloc);}
+        catch (std::exception &e) {throw;}
+
             try 
             {
                 Server server(sbloc);
                 this->addServer(server);
             }
             catch (std::exception &e) {throw;}
-        }
-        else
-            throw std::runtime_error("Server minimal requirements are : port and root");
     }
 }

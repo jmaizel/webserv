@@ -399,7 +399,6 @@ HttpResponse    Server::handle_file_response(const std::string &path, LocationBl
         return generate_error_response(403, "Forbidden", "You do not have permissions to upload files", location);
 
     //create new file or overwite
-    std::cout << "HERE : " << path << std::endl;
     int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
     {
@@ -439,6 +438,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
         return generate_error_response(405, "Method Not Allowed", "Body too large", location);
 
     //construct the path of the ressource based on the root and upload path
+    std::string getpath = get_ressource_path(target, location);
     std::string path = get_POST_ressource_path(target, location);
     std::cout << "Contructed ressource path: " << path << std::endl;
 
@@ -469,7 +469,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
         //if upload not enabled
         if (location.upload_enable == false)
             return generate_error_response(403, "Forbidden", "Requested location doesn't allow uploads", location);
-            
+
         //check directory write and x permission
         if (access(path.c_str(), W_OK | X_OK) < 0)
         {
