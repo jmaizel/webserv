@@ -521,7 +521,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
     if (dot != std::string::npos)
     {
         //construct the file extension
-        std::string ext = path.substr(dot + 1);
+        std::string ext = path.substr(dot);
 
         //check in location.cgi_extension
         for (size_t i = 0; i < location.cgi_extension.size(); ++i)
