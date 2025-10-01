@@ -321,6 +321,73 @@ void Server::check_timeouts(int timeoutSec, int client)
     }
 }
 
+void    Server::generate_error_response_special(int code, const std::string &raison, const std::string &details)
+{
+    //we are not yet in a location so either use a default one or a special one
+
+    //get the default location
+    std::map<std::string, LocationBloc>::iterator default_location_it;
+    LocationBloc location;
+
+    default_location_it = this->_locations.find("/");
+    location = default_location_it->second;
+
+    generate_error_response(code, raison, details, location);
+}
+
+std::string decode_chunked(std::string &raw)
+{
+    size_t pos = 0;
+    std::string out;
+
+    while (true)
+    {
+        //find end of size str
+        size_t line_end = raw.find("\r\n", pos);
+        if (line_end == std::string::npos)
+            throw std::runtime_error("No size line");
+
+        //isolate size str
+        std::string size_str = raw.substr(pos, line_end - pos);
+
+        //parse hex size
+        size_t chunk_size;
+
+        //TODO THIS DOES NOT DO HEXADECIMALS ADD IT NEXT
+        try {chunk_size = safe_atosize_t(size_str);}
+        catch (std::exception &e)
+        {throw std::runtime_error("Incorrect size line");}
+
+        //skip \r\n after size
+        pos = line_end + 2;
+
+        //if end of chunked body
+        if (chunk_size == 0)
+        {
+            if (raw.compare(pos, 2, "\r\n\r\n") != 0)
+                throw std::runtime_error("Bad termination");
+            pos += 4;
+            break;
+        }
+
+        //get the corresponding string
+        std::string content_str = raw.substr(pos, chunk_size);
+        if (content_str.size() != chunk_size)
+            throw std::runtime_error("Wrong content string");
+
+        //append data
+        out.append(content_str);
+        pos += chunk_size;
+
+        //must be CRLF after the content string
+        if (raw.compare(pos, 2, "\r\n") != 0)
+            throw std::runtime_error("Tokens must be terminated by CRLF");
+        //skip those
+        pos += 2;
+    }
+    return (out);
+}
+
 void Server::handle_client_request(int client_fd)
 {
     char buffer[4096];
@@ -338,6 +405,7 @@ void Server::handle_client_request(int client_fd)
     //if the client interupted the connection
     if (n == 0)
     {
+        //no error code here
         std::cout << "Client: " << itc->first << " interrupted the connection" << itc->second << std::endl;
         disconnect_client(client_fd);
         return;
@@ -373,11 +441,11 @@ void Server::handle_client_request(int client_fd)
         try { req.parse(itc->second); }
         catch (std::exception &e)
         {
-            //TODO send 400 Bad Request
+            generate_error_response_special(400, "Bad Request", e.what());
             disconnect_client(client_fd);
-            return;
+            return ;
         }
-
+        req.print();
         //do we have all the body (Content-Lenght)
         if (req.getMethod() == "POST")
         {
@@ -407,16 +475,34 @@ void Server::handle_client_request(int client_fd)
             //if we have Transfer-Encoding
             else if ((ith = headers.find("Transfer-Encoding")) != headers.end() && ith->second == "chunked")
             {
-                //to be implemented
-                reset_timeout(client_fd);
-                //disconnect ATM
-                disconnect_client(client_fd);
-                return;
+                //check first 
+                size_t header_end = client_buffer.find("\r\n\r\n") + 4;
+                body_buffer = client_buffer.substr(header_end);
+                //fill untill you have the terminating string
+                if (body_buffer.find("0\r\n\r\n") == std::string::npos)
+                {
+                    //append to the body buffer and the client buffer
+                    body_buffer.append(buffer);
+                    client_buffer.append(buffer);
+                    std::cout << "Constructed Body: " << body_buffer << std::endl;
+                    //if we still don't have the buffer
+                    if (body_buffer.find("0\r\n") == std::string::npos)
+                        return;
+                    reset_timeout(client_fd);
+                }
+                //translate the raw body into a normal body and check for errors
+                try {body_buffer = decode_chunked(body_buffer);}
+                catch (std::exception &e)
+                {
+                    generate_error_response_special(400, "Bad Request", e.what());
+                    disconnect_client(client_fd);
+                    return ;
+                }
             }
             //if the body headers is messed up
             else
             {
-                //send 400 no chunked or content length so no way to parse
+                generate_error_response_special(400, "Bad Request", "Unkown POST directive");
                 disconnect_client(client_fd);
                 return;
             }
@@ -430,14 +516,13 @@ void Server::handle_client_request(int client_fd)
     if (req.getMethod() == "POST")
     {
         std::map<std::string, std::string> headers = req.getHeaders();
-        std::map<std::string, std::string>::iterator ith = headers.find("Content-Length");
         //works only for content length!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        size_t content_length = safe_atosize_t(ith->second.c_str());
         size_t header_end = client_buffer.find("\r\n\r\n") + 4;
         std::string body = client_buffer.substr(header_end);
-        req.setBody(body.substr(0, content_length));
+        //can be bigger but gets  filtered out after
+        req.setBody(body);
     }
-
+    req.print();
     //generate response
     HttpResponse res = generate_response(req);
     std::string response = res.toStr();

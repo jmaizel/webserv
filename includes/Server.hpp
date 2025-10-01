@@ -101,6 +101,7 @@ class Server
         //response methods
         void            handle_client_request(int client_fd);
         HttpResponse    generate_response(HttpRequest &req);
+        void            generate_error_response_special(int code, const std::string &raison, const std::string &details);
         HttpResponse    generate_success_response(int code, const std::string &reason, const std::string &body);
         HttpResponse    generate_get_success_response(int code, const std::string &reason, const std::string &body);
         HttpResponse    generate_autoindex_response(const std::string &path, const std::string &target, LocationBloc &location);

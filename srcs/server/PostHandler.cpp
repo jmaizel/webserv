@@ -435,10 +435,9 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     //check body size
     if(req.getBody().size() > location.client_max_body_size)
-        return generate_error_response(405, "Method Not Allowed", "Body too large", location);
+        return generate_error_response(413, "Payload Too Large", "Body too large", location);
 
     //construct the path of the ressource based on the root and upload path
-    std::string getpath = get_ressource_path(target, location);
     std::string path = get_POST_ressource_path(target, location);
     std::cout << "Contructed ressource path: " << path << std::endl;
 

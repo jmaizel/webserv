@@ -10,8 +10,6 @@
 #                                                                              #
 # **************************************************************************** #
 
--change all ./wwww to server root!
--check multipart, solve the body problem
--implement CGI
--make a default location (/) if not exist
+-implement a timeout for CGI in case of a very long script or infinit loop
+-create post method for file upload and not for POST
 
