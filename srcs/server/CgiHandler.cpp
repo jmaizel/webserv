@@ -79,7 +79,7 @@ void ft_setup_cgi_environment(const HttpRequest& request, const std::string& ser
 }
 
 //processus enfant pour l'exécution CGI
-void ft_execute_cgi_child(const std::string& script_path, const HttpRequest& request, const std::string& server_name, int server_port,int pipe_in[2], int pipe_out[2])
+void ft_execute_cgi_child(const std::string& script_path, const HttpRequest& request, const std::string& server_name, int server_port, const std::string& location_root, int pipe_in[2], int pipe_out[2])
 {
     dup2(pipe_in[0], STDIN_FILENO);
     dup2(pipe_out[1], STDOUT_FILENO);
@@ -89,24 +89,29 @@ void ft_execute_cgi_child(const std::string& script_path, const HttpRequest& req
     close(pipe_out[0]); 
     close(pipe_out[1]);
     
-    chdir("./www/");
+    //utiliser le root de la location au lieu de hardcoder "./www/"
+    chdir(location_root.c_str());
     
     ft_setup_cgi_environment(request, server_name, server_port, script_path);
     
-    std::string interpreter = ft_get_interpreter(script_path);
     std::string script_name;
-    if (script_path.find("./www/") == 0)
+    //calculer la longueur du root de la location pour l'enlever du script_path
+    if (script_path.find(location_root + "/") == 0)
     {
-        script_name = script_path.substr(6);
+        script_name = script_path.substr(location_root.length() + 1);
     }
     else
     {
         script_name = script_path;
     }
 
-    char *args[] = {const_cast<char*>(interpreter.c_str()), 
+    //préparer les arguments pour Python uniquement
+    char *args[] = {const_cast<char*>("python3"), 
                     const_cast<char*>(script_name.c_str()), NULL};
-    execvp(interpreter.c_str(), args);
+    
+    //utiliser execve avec le chemin complet de Python
+    extern char **environ;
+    execve("/usr/bin/python3", args, environ);
     
     exit(1);
 }
@@ -162,6 +167,7 @@ HttpResponse ft_parse_cgi_headers(const std::string& headers_part, const std::st
 //fonction pour construire une réponse HTTP à partir de la sortie CGI
 HttpResponse ft_build_cgi_response(const std::string& cgi_output)
 {
+    std::cout << "CGI OUTPUT :\n"  << cgi_output << std::endl;
     size_t header_end = cgi_output.find("\r\n\r\n");
     if (header_end == std::string::npos)
         header_end = cgi_output.find("\n\n");
@@ -245,7 +251,7 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
 
     if (pid == 0)
     {
-        ft_execute_cgi_child(script_path, request, this->_name, this->_listen, pipe_in, pipe_out);
+        ft_execute_cgi_child(script_path, request, this->_name, this->_listen, location.root, pipe_in, pipe_out);
     }
 
     //parent
