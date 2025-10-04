@@ -260,6 +260,10 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     std::map<std::string, LocationBloc>::iterator   it = find_best_location(target);
     LocationBloc location = it->second;
 
+    if (req.getFlag() == 400)
+    {
+        res =  res = generate_error_response(400, "Bad Request", "The browser sent a request that this server could not understand", location);
+    }
     //check if there are no redirects in the server -> redirect directly
     if (this->_redirect.size() > 1)
         return generate_redirect_response(this->_redirect, location);
@@ -267,12 +271,6 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     //check if there are no redirects in the location -> redirect directly
     if (location.redirect.size() > 1)
         return generate_redirect_response(location.redirect, location);
-
-    //if request was malformed
-    if (req.getFlag() == 400)
-    {
-        res =  res = generate_error_response(400, "Bad Request", "The browser sent a request that this server could not understand", location);
-    }
     if (method == "GET")
     {
         res = generate_get_response(req, location);
@@ -321,18 +319,19 @@ void Server::check_timeouts(int timeoutSec, int client)
     }
 }
 
-void    Server::generate_error_response_special(int code, const std::string &raison, const std::string &details)
+void    Server::generate_error_response_special(int client_fd, int code, const std::string &raison, const std::string &details)
 {
     //we are not yet in a location so either use a default one or a special one
 
     //get the default location
+    HttpResponse res;
     std::map<std::string, LocationBloc>::iterator default_location_it;
     LocationBloc location;
 
     default_location_it = this->_locations.find("/");
     location = default_location_it->second;
-
-    generate_error_response(code, raison, details, location);
+    res = generate_error_response(code, raison, details, location);
+    send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
 }
 
 std::string decode_chunked(std::string &raw)
@@ -342,10 +341,10 @@ std::string decode_chunked(std::string &raw)
 
     while (true)
     {
-        //find end of size str
+        //find end of first line
         size_t line_end = raw.find("\r\n", pos);
         if (line_end == std::string::npos)
-            throw std::runtime_error("No size line");
+            throw std::runtime_error("no CRLF at the end of a line");
 
         //isolate size str
         std::string size_str = raw.substr(pos, line_end - pos);
@@ -353,8 +352,7 @@ std::string decode_chunked(std::string &raw)
         //parse hex size
         size_t chunk_size;
 
-        //TODO THIS DOES NOT DO HEXADECIMALS ADD IT NEXT
-        try {chunk_size = safe_atosize_t(size_str);}
+        try {chunk_size = safe_hextosize_t(size_str);}
         catch (std::exception &e)
         {throw std::runtime_error("Incorrect size line");}
 
@@ -364,7 +362,7 @@ std::string decode_chunked(std::string &raw)
         //if end of chunked body
         if (chunk_size == 0)
         {
-            if (raw.compare(pos, 2, "\r\n\r\n") != 0)
+            if (raw.compare(pos, 2, "\r\n") != 0)
                 throw std::runtime_error("Bad termination");
             pos += 4;
             break;
@@ -374,7 +372,6 @@ std::string decode_chunked(std::string &raw)
         std::string content_str = raw.substr(pos, chunk_size);
         if (content_str.size() != chunk_size)
             throw std::runtime_error("Wrong content string");
-
         //append data
         out.append(content_str);
         pos += chunk_size;
@@ -419,7 +416,11 @@ void Server::handle_client_request(int client_fd)
             return;
         //actual recv error
         else
+        {
             disconnect_client(client_fd);
+            std::cout << "Error: " << errno << std::endl;
+            return ;
+        }
     }
 
     //append client data
@@ -429,26 +430,33 @@ void Server::handle_client_request(int client_fd)
         if (client_buffer.find("\r\n\r\n") == std::string::npos)
         {
             client_buffer.append(buffer, n);
-            std::cout << "Client: " << client_fd << ": Constructed Request: " << client_buffer << std::endl;
+            std::cout << "Client: " << client_fd << ": Constructed Headers: " << client_buffer << std::endl;
             //if we still don't have it send it back to select
             if (client_buffer.find("\r\n\r\n") == std::string::npos)
                 return;
             //are the headers valid
+            HttpRequest req;
+            try { req.parse(itc->second); }
+            catch (std::exception &e)
+            {
+                generate_error_response_special(client_fd, 400, "Bad Request", e.what());
+                disconnect_client(client_fd);
+                return ;
+            }
+            std::cout << "Headers Received :\n" << std::endl;
+            req.print();
             reset_timeout(client_fd);
+            //right when you get the headers clear the buffer
+            n = 0;
         }
-        //are the headers valid
+
         HttpRequest req;
-        try { req.parse(itc->second); }
-        catch (std::exception &e)
-        {
-            generate_error_response_special(400, "Bad Request", e.what());
-            disconnect_client(client_fd);
-            return ;
-        }
-        req.print();
+        req.parse(itc->second);
+
         //do we have all the body (Content-Lenght)
         if (req.getMethod() == "POST")
         {
+            std::cout << "Entering POST" << std::endl;
             //get content-length
             std::map<std::string, std::string> headers = req.getHeaders();
             std::map<std::string, std::string>::iterator ith = headers.find("Content-Length");
@@ -460,11 +468,11 @@ void Server::handle_client_request(int client_fd)
                 size_t content_length = safe_atosize_t(ith->second.c_str());
                 size_t header_end = client_buffer.find("\r\n\r\n") + 4;
                 body_buffer = client_buffer.substr(header_end);
-
+                std::cout << "received cl : " << content_length << "\n" << "body buffer : "<< body_buffer << std::endl;
                 if (body_buffer.size() < content_length)
                 {
-                    body_buffer.append(buffer);
-                    client_buffer.append(buffer);
+                    body_buffer.append(buffer, n);
+                    client_buffer.append(buffer, n);
                     std::cout << "Constructed Body: " << body_buffer << std::endl;
                     //if we still don't have the buffer
                     if (body_buffer.size() < content_length)
@@ -482,27 +490,20 @@ void Server::handle_client_request(int client_fd)
                 if (body_buffer.find("0\r\n\r\n") == std::string::npos)
                 {
                     //append to the body buffer and the client buffer
-                    body_buffer.append(buffer);
-                    client_buffer.append(buffer);
+                    body_buffer.append(buffer, n);
+                    client_buffer.append(buffer, n);
                     std::cout << "Constructed Body: " << body_buffer << std::endl;
                     //if we still don't have the buffer
                     if (body_buffer.find("0\r\n") == std::string::npos)
                         return;
                     reset_timeout(client_fd);
                 }
-                //translate the raw body into a normal body and check for errors
-                try {body_buffer = decode_chunked(body_buffer);}
-                catch (std::exception &e)
-                {
-                    generate_error_response_special(400, "Bad Request", e.what());
-                    disconnect_client(client_fd);
-                    return ;
-                }
             }
             //if the body headers is messed up
             else
             {
-                generate_error_response_special(400, "Bad Request", "Unkown POST directive");
+                std::cout << "hello" << std::endl;
+                generate_error_response_special(client_fd, 400, "Bad Request", "Unkown POST directive");
                 disconnect_client(client_fd);
                 return;
             }
@@ -515,11 +516,23 @@ void Server::handle_client_request(int client_fd)
 
     if (req.getMethod() == "POST")
     {
+        std::string body;
         std::map<std::string, std::string> headers = req.getHeaders();
-        //works only for content length!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        std::map<std::string, std::string>::iterator ith;
         size_t header_end = client_buffer.find("\r\n\r\n") + 4;
-        std::string body = client_buffer.substr(header_end);
-        //can be bigger but gets  filtered out after
+        body = client_buffer.substr(header_end);
+        
+        //if it is chunked
+        if ((ith = headers.find("Transfer-Encoding")) != headers.end() && ith->second == "chunked")
+        {
+            try {body = decode_chunked(body);}
+            catch (std::exception &e)
+            {
+                generate_error_response_special(client_fd, 400, "Bad Request", e.what());
+                disconnect_client(client_fd);
+                return ;
+            }
+        }
         req.setBody(body);
     }
     req.print();

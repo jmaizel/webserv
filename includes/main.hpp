@@ -28,6 +28,8 @@
 #define MAX_CLIENTS 1000
 #define TIMEOUT_SEC 30
 
+size_t                      safe_hextosize_t(const std::string &s);
+std::string                 generate_upload_filename();
 std::string                 strtrim(std::string &str);
 std::string                 brackettrim(std::string &line);
 std::string                 spacetrim(std::string &line);

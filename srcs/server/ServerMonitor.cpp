@@ -313,6 +313,7 @@ void    validate_locations(ServerBloc &sbloc, std::map<std::string, LocationBloc
     it = locs.find("/");
     if (it == locs.end())
     {
+        std::cout << "no default bloc, creating one..." << std::endl;
         LocationBloc default_loc_bloc(sbloc);
         locs["/"] = default_loc_bloc;
     }

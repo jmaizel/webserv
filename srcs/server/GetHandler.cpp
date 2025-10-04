@@ -109,10 +109,6 @@ std::string get_content_Type(std::string file)
         return "image/x-icon";
     else if (ext == ".jpeg" || ext == ".jpg")
         return "image/jpeg";
-    else if (ext == ".webp")
-        return "image/webp";
-    else if (ext == ".svg")
-        return "image/svg+xml";
 
     //documents
     else if (ext == ".pdf")
@@ -121,30 +117,12 @@ std::string get_content_Type(std::string file)
     //audio
     else if (ext == ".mp3")
         return "audio/mpeg";
-    else if (ext == ".ogg")
-        return "audio/ogg";
     else if (ext == ".wav")
         return "audio/wav";
-    else if (ext == ".flac")
-        return "audio/flac";
 
     //video
     else if (ext == ".mp4")
         return "video/mp4";
-    else if (ext == ".webm")
-        return "video/webm";
-    else if (ext == ".ogv")
-        return "video/ogg";
-
-    //fonts
-    else if (ext == ".woff")
-        return "font/woff";
-    else if (ext == ".woff2")
-        return "font/woff2";
-    else if (ext == ".ttf")
-        return "font/ttf";
-    else if (ext == ".otf")
-        return "font/otf";
 
     //default -> makes raw bytes
     return "application/octet-stream";

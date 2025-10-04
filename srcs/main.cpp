@@ -14,7 +14,7 @@
 
 int main (int argc, char **argv)
 {
-
+    std::srand(static_cast<unsigned>(std::time(0)));
     signal(SIGINT, ServerMonitor::handle_sigint);
     signal(SIGTERM, ServerMonitor::handle_sigint);
     

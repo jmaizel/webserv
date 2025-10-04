@@ -39,8 +39,8 @@ LocationBloc::LocationBloc(ServerBloc &s) :
     client_max_body_size(s.client_max_body_size),
     index(s.index),
     upload_path(s.upload_path),
-    upload_enable(false),
-    autoindex(false)
+    upload_enable(s.upload_enable),
+    autoindex(s.autoindex)
 {}
 
 LocationBloc::~LocationBloc()

@@ -127,7 +127,7 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
         if (error_codes[i] == code)
         {
             //build the path
-            std::string path = "./www" + uri;
+            std::string path = location.root;
 
             //check file existence
             if (access(path.c_str(), F_OK) < 0)
