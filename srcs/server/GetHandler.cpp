@@ -109,10 +109,6 @@ std::string get_content_Type(std::string file)
         return "image/x-icon";
     else if (ext == ".jpeg" || ext == ".jpg")
         return "image/jpeg";
-    else if (ext == ".webp")
-        return "image/webp";
-    else if (ext == ".svg")
-        return "image/svg+xml";
 
     //documents
     else if (ext == ".pdf")
@@ -121,30 +117,12 @@ std::string get_content_Type(std::string file)
     //audio
     else if (ext == ".mp3")
         return "audio/mpeg";
-    else if (ext == ".ogg")
-        return "audio/ogg";
     else if (ext == ".wav")
         return "audio/wav";
-    else if (ext == ".flac")
-        return "audio/flac";
 
     //video
     else if (ext == ".mp4")
         return "video/mp4";
-    else if (ext == ".webm")
-        return "video/webm";
-    else if (ext == ".ogv")
-        return "video/ogg";
-
-    //fonts
-    else if (ext == ".woff")
-        return "font/woff";
-    else if (ext == ".woff2")
-        return "font/woff2";
-    else if (ext == ".ttf")
-        return "font/ttf";
-    else if (ext == ".otf")
-        return "font/otf";
 
     //default -> makes raw bytes
     return "application/octet-stream";
@@ -226,15 +204,16 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
     size_t dot = path.rfind('.');
     if (dot != std::string::npos)
     {
-        std::cout << "CGI ACTIVATED" << std::endl;
         //construct the file extension
-        std::string ext = path.substr(dot + 1);
+        std::string ext = path.substr(dot);
 
         //check in location.cgi_extension
         for (size_t i = 0; i < location.cgi_extension.size(); ++i)
         {
+            std::cout << ext << std::endl;
             if (ext == location.cgi_extension[i])
             {
+                std::cout << "CGI ACTIVATED" << std::endl;
                 //file should be executed as CGI
                 return generate_cgi_response(path, req, location);
             }

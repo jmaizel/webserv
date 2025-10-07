@@ -167,6 +167,7 @@ HttpResponse ft_parse_cgi_headers(const std::string& headers_part, const std::st
 //fonction pour construire une réponse HTTP à partir de la sortie CGI
 HttpResponse ft_build_cgi_response(const std::string& cgi_output)
 {
+    std::cout << "CGI OUTPUT :\n"  << cgi_output << std::endl;
     size_t header_end = cgi_output.find("\r\n\r\n");
     if (header_end == std::string::npos)
         header_end = cgi_output.find("\n\n");

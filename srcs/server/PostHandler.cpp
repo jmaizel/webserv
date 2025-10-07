@@ -116,7 +116,7 @@ std::map<std::string, std::string> parse_raw_body(const std::string &body)
             result[key] = value;
         }
     }
-    return result;
+    return (result);
 }
 
 HttpResponse Server::handle_json(const std::string &body, const std::string &path, LocationBloc &location)
@@ -146,10 +146,18 @@ HttpResponse Server::handle_json(const std::string &body, const std::string &pat
     //random data
     else
     {
-        for (it = sorted_body.begin(); it != sorted_body.end(); ++it)
-        {
-            std::cout << it->first << " = " << it->second << std::endl;
-        }
+        //if no upload permission
+        if (!location.upload_enable)
+            return generate_error_response(403, "Forbidden", "You do not have permissions to upload files", location);
+
+        std::string file_path = path + "/" + generate_upload_filename();
+
+        int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd < 0)
+            return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
+        write(fd, (body).c_str(), (body).size());
+        close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");;
     }
     return generate_success_response(200, "OK", "Data processed successfully");
 }
@@ -211,7 +219,6 @@ std::string Server::get_boundary(const std::string &content_type)
 HttpResponse Server::handle_multipart(const std::string &body, const std::string &path, const std::string &content_type, LocationBloc &location)
 {
     std::string boundary;
-    std::map<std::string, std::string> content_received;
     size_t start = 0;
     int files_created = 0;
     (void)path;
@@ -225,16 +232,13 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
     std::string closing_boundary = boundary + "--";
     while (true)
     {
-        std::cout << "HERE : " << boundary << " and " << closing_boundary << std::endl;
         //find the next boundary
         size_t pos = body.find(boundary, start);
         if (pos == std::string::npos)
             break;
-        std::cout << "HERE : " << boundary << " and " << closing_boundary << std::endl;
         //stop if closing boundary
         if (body.compare(pos, closing_boundary.size(), closing_boundary) == 0)
             break;
-        std::cout << "HERE : " << boundary << " and " << closing_boundary << std::endl;
         //move past boundary + /r/n
         pos += boundary.size();
         if (body.compare(pos, 2, "\r\n") == 0)
@@ -288,29 +292,28 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
                 return generate_error_response(500, "Internel Server Error", "Read failed", location);
             write(fd, (content).c_str(), (content).size());
             close(fd);
-            content_received[filename] = content;
             files_created++;
         }
 
-        //if no files and just a field
+        //if no files and just a field. dump body in a random file
         else if (name_pos != std::string::npos)
         {
-            //extract field name
-            size_t start_q = cd_line.find("\"", name_pos);
-            size_t end_q   = cd_line.find("\"", start_q + 1);
-            std::string fieldname = cd_line.substr(start_q + 1, end_q - (start_q + 1));
-            content_received[fieldname] = content;
-        }
+            //if no upload permission
+            if (!location.upload_enable)
+                return generate_error_response(403, "Forbidden", "You do not have permissions to upload files", location);
 
+            std::string file_path = path + "/" + generate_upload_filename();
+
+            int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (fd < 0)
+                return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
+            write(fd, (content).c_str(), (content).size());
+            close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");;
+        }
         //move to the next part
         start = next_boundary;
     }
-    //DEBUGGING
-    for (std::map<std::string, std::string>::const_iterator it = content_received.begin(); it != content_received.end(); ++it)
-    {
-        std::cout << it->first << " = " << it->second << std::endl;
-    }
-
     if (files_created > 0)
         return generate_success_response(201, "OK", "File(s) created successfully");
     return generate_success_response(200, "OK", "Form(s) processed successfully");
@@ -377,10 +380,22 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
         return generate_success_response(201, "Created", "File uploaded successfully");
     }
 
-    //random data
+    //no filename, create a random filename a dump body inside
     else
     {
-        return generate_error_response(200, "OK", "Data handled successfully", location);
+        //if no upload permission
+        if (!location.upload_enable)
+            return generate_error_response(403, "Forbidden", "You do not have permissions to upload files", location);
+
+        std::string file_path = path + "/" + generate_upload_filename();
+
+        int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd < 0)
+            return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
+        write(fd, (body).c_str(), (body).size());
+        close(fd);
+
+        return generate_success_response(201, "Created", "File uploaded successfully");
     }
     return generate_success_response(200, "OK", "Data proccessed successfully");
 }
@@ -399,7 +414,6 @@ HttpResponse    Server::handle_file_response(const std::string &path, LocationBl
         return generate_error_response(403, "Forbidden", "You do not have permissions to upload files", location);
 
     //create new file or overwite
-    std::cout << "HERE : " << path << std::endl;
     int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
     {
@@ -419,6 +433,23 @@ HttpResponse    Server::handle_file_response(const std::string &path, LocationBl
     return generate_success_response(201, "Created", "File created successfully");
 }
 
+HttpResponse    Server::handle_generic_type(const std::string &body, const std::string &path, LocationBloc &location)
+{
+    //if no upload permission
+    if (!location.upload_enable)
+        return generate_error_response(403, "Forbidden", "You do not have permissions to upload files", location);
+
+    std::string file_path = path + "/" + generate_upload_filename();
+
+    int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0)
+        return generate_error_response(500, "Internel Server Error", "Read failed", location);
+    write(fd, (body).c_str(), (body).size());
+    close(fd);
+
+    return generate_success_response(201, "Created", "File uploaded successfully");
+}
+
 HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &location)
 {
     HttpResponse res;
@@ -432,11 +463,11 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     //check if POST is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
-        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve DELETE method", location);
-    
+        return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method", location);
+
     //check body size
     if(req.getBody().size() > location.client_max_body_size)
-        return generate_error_response(405, "Method Not Allowed", "Body too large", location);
+        return generate_error_response(413, "Payload Too Large", "Body too large", location);
 
     //construct the path of the ressource based on the root and upload path
     std::string path = get_POST_ressource_path(target, location);
@@ -466,6 +497,10 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
     //if target exists but is a directory
     if (S_ISDIR(st.st_mode))
     {
+        //if upload not enabled
+        if (location.upload_enable == false)
+            return generate_error_response(403, "Forbidden", "Requested location doesn't allow uploads", location);
+
         //check directory write and x permission
         if (access(path.c_str(), W_OK | X_OK) < 0)
         {
@@ -476,10 +511,11 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
         std::map<std::string, std::string>::const_iterator it = req.getHeaders().find("Content-Type");
 
-        //if the client didn't specify a content type we can't parse it 
+        //if the client didn't specify a content type we can't parse it. give it a default one 
         if (it == req.getHeaders().end())
-            return (generate_error_response(400, "Bad Request", "No Content-Type mentioned", location));
-
+        {
+            return (handle_generic_type(req.getBody(), path, location));
+        }
         //get the content type
         std::string content_type = it->second;
 
@@ -509,7 +545,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
         //if any other Content-Type we can't safely parse it so return 415
         else
         {
-            return (generate_error_response(415, "415 Unsupported Media Type", "Unrecognised Content-Type", location));
+            return (handle_generic_type(req.getBody(), path, location));
         }
     }
 
@@ -518,7 +554,7 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
     if (dot != std::string::npos)
     {
         //construct the file extension
-        std::string ext = path.substr(dot + 1);
+        std::string ext = path.substr(dot);
 
         //check in location.cgi_extension
         for (size_t i = 0; i < location.cgi_extension.size(); ++i)

@@ -17,11 +17,19 @@
 #include "Server.hpp"
 #include "ServerMonitor.hpp"
 #include "Config.hpp"
+#include "Client.hpp"
 #include <stdexcept>
 #include <limits>
 #include <sys/types.h>
 #include <dirent.h>
 
+#define HEADER_TIMEOUT 60
+#define BODY_TIMEOUT 60
+#define MAX_CLIENTS 1000
+#define TIMEOUT_SEC 30
+
+size_t                      safe_hextosize_t(const std::string &s);
+std::string                 generate_upload_filename();
 std::string                 strtrim(std::string &str);
 std::string                 brackettrim(std::string &line);
 std::string                 spacetrim(std::string &line);

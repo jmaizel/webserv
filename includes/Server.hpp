@@ -13,6 +13,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "Client.hpp"
 #include "HttpRequest.hpp"
 #include "HttpResponse.hpp"
 
@@ -62,7 +63,9 @@ class Server
 		fd_set				_write_fds;
 		fd_set				_master_fds;
 		int					_max_fd;
-		std::vector<int>	_client_fds;
+		std::vector<int>            _client_fds;
+        std::map<int, std::string>  _client_buffers;
+        std::map<int, time_t>       _clients_timeout;
 
         //helpers
         std::map<std::string, LocationBloc>::iterator   find_best_location(const std::string &target);
@@ -88,6 +91,8 @@ class Server
 		bool    is_client_fd(int fd) const;
 		void    accept_new_client(void);
 		void    disconnect_client(int client_fd);
+        void    check_timeouts(int timeoutSec, int client);
+        void    reset_timeout(int client_fd);
 
         void    init();
         void    print();
@@ -95,7 +100,9 @@ class Server
 
         //response methods
         void            handle_client_request(int client_fd);
+        void            generate_error_response_special(int client_fd, int code, const std::string &raison, const std::string &details);
         HttpResponse    generate_response(HttpRequest &req);
+        HttpResponse    handle_generic_type(const std::string &body, const std::string &path, LocationBloc &location);
         HttpResponse    generate_success_response(int code, const std::string &reason, const std::string &body);
         HttpResponse    generate_get_success_response(int code, const std::string &reason, const std::string &body);
         HttpResponse    generate_autoindex_response(const std::string &path, const std::string &target, LocationBloc &location);

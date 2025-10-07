@@ -15,6 +15,52 @@
 #include <sstream>
 #include <string>
 
+#include <string>
+#include <sstream>
+#include <limits>
+#include <stdexcept>
+#include <cctype>
+
+size_t safe_hextosize_t(const std::string &s)
+{
+    if (s.empty())
+        throw std::runtime_error("Empty size string");
+
+    size_t result = 0;
+
+    // Allow both lowercase and uppercase hex digits
+    for (size_t i = 0; i < s.size(); ++i)
+    {
+        char c = s[i];
+        int digit;
+
+        if (c >= '0' && c <= '9')
+            digit = c - '0';
+        else if (c >= 'a' && c <= 'f')
+            digit = 10 + (c - 'a');
+        else if (c >= 'A' && c <= 'F')
+            digit = 10 + (c - 'A');
+        else
+            throw std::runtime_error("Invalid hex character in chunk size");
+
+        // Check for overflow before multiplying
+        if (result > (std::numeric_limits<size_t>::max() - digit) / 16)
+            throw std::runtime_error("Chunk size overflow");
+
+        result = result * 16 + digit;
+    }
+
+    return result;
+}
+
+
+std::string generate_upload_filename()
+{
+        std::ostringstream oss;
+        oss << "upload_" << std::rand() << ".txt";
+        return (oss.str());
+};
+
 std::string trimmer(std::string &str)
 {
     std::string                 trimmed;
