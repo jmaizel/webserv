@@ -18,9 +18,6 @@ HttpResponse    Server::generate_delete_response(HttpRequest &req, LocationBloc 
 
     std::string target = req.getTarget();
 
-    std::cout << "Delete method called for target : " << target << std::endl;
-
-    std::cout << "Location matched to : " << location.path << std::endl;
     location.print();
 
     //check if DELETE is an accepted method in the location
@@ -29,7 +26,6 @@ HttpResponse    Server::generate_delete_response(HttpRequest &req, LocationBloc 
     
     //construct the path of the location based on the root
     std::string path = get_ressource_path(target, location);
-    std::cout << "Contructed ressource path: " << path << std::endl;
 
     //Check existence of the ressource path
     struct stat st;

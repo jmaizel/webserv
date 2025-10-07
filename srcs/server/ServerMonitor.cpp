@@ -176,10 +176,6 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
             key_values.push_back(tokens[*i]);
             (*i)++;
         }
-        std::cout << "location key value : ";
-        for (size_t j = 0; j < key_values.size(); ++j)
-            std::cout << key_values[j] << " ";
-        std::cout << std::endl;
         if (key_values.empty())
             continue ;
         if (key_values.size() < 2)
@@ -295,10 +291,6 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
             key_values.push_back(tokens[i]);
             i++;
         }
-        std::cout << "server key value : ";
-        for (size_t j = 0; j < key_values.size(); ++j)
-            std::cout << key_values[j] << " ";
-        std::cout << std::endl;
 
         if (key_values.empty())
             continue ;
@@ -352,12 +344,11 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
         }
         else if (key_values[0] == "return")
         {
-            size_t test;
             if (key_values.size() < 2)
                 throw std::runtime_error("return: missing status code");
             if (key_values.size() > 3)
                 throw std::runtime_error("return: too may parameters");
-            try{test = safe_atosize_t(key_values[1]);}
+            try{safe_atosize_t(key_values[1]);}
                 catch (std::exception &e) {throw std::runtime_error(key_values[1] + ": not a valid error code");}
             sbloc.redirect.push_back(key_values[1]);
             if (key_values.size() == 3)
@@ -563,14 +554,9 @@ void    ServerMonitor::parse()
     }
     file.close();
     trimmed = buffer.str();
-    std::cout << "BUFFER STRING :\n" << trimmed << "\n" << std::endl; 
 
     //tokenizing the whole string
-    std::cout << "TOKENS : ";
     tokens = tokenize(trimmed);
-    for (size_t i = 0; i < tokens.size(); ++i)
-            std::cout << tokens[i] << " ";
-    std::cout << "\n" << std::endl;
     
     //check bracket placement
     try{valid_brackets(tokens);}
@@ -592,10 +578,6 @@ void    ServerMonitor::parse()
             i++;
         }
 
-        std::cout << "SERVER BLOCK" << std::endl;
-        for (size_t j = 0; j < vserver.size(); ++j)
-            std::cout << vserver[j] << std::endl;
-        std::cout << std::endl << std::endl;
 
         //creating the server bloc
         ServerBloc sbloc = get_server_bloc(vserver);

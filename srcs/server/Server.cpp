@@ -304,7 +304,6 @@ void Server::handle_client_request(int client_fd)
     }
 
     buffer[bytes_read] = '\0';
-    std::cout << "Received: " << buffer << std::endl;
 
     //create a http request object
     HttpRequest req;

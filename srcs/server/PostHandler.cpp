@@ -148,7 +148,6 @@ HttpResponse Server::handle_json(const std::string &body, const std::string &pat
     {
         for (it = sorted_body.begin(); it != sorted_body.end(); ++it)
         {
-            std::cout << it->first << " = " << it->second << std::endl;
         }
     }
     return generate_success_response(200, "OK", "Data processed successfully");
@@ -225,16 +224,13 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
     std::string closing_boundary = boundary + "--";
     while (true)
     {
-        std::cout << "HERE : " << boundary << " and " << closing_boundary << std::endl;
         //find the next boundary
         size_t pos = body.find(boundary, start);
         if (pos == std::string::npos)
             break;
-        std::cout << "HERE : " << boundary << " and " << closing_boundary << std::endl;
         //stop if closing boundary
         if (body.compare(pos, closing_boundary.size(), closing_boundary) == 0)
             break;
-        std::cout << "HERE : " << boundary << " and " << closing_boundary << std::endl;
         //move past boundary + /r/n
         pos += boundary.size();
         if (body.compare(pos, 2, "\r\n") == 0)
@@ -256,7 +252,6 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
         std::string content = body.substr(content_start, next_boundary - content_start);
 
         //parse Content-Disposition
-        std::cout << "HERE : " << content << std::endl;
         size_t cd_pos = headers.find("Content-Disposition:");
         if (cd_pos == std::string::npos)
             continue;
@@ -304,11 +299,6 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
 
         //move to the next part
         start = next_boundary;
-    }
-    //DEBUGGING
-    for (std::map<std::string, std::string>::const_iterator it = content_received.begin(); it != content_received.end(); ++it)
-    {
-        std::cout << it->first << " = " << it->second << std::endl;
     }
 
     if (files_created > 0)
@@ -399,7 +389,6 @@ HttpResponse    Server::handle_file_response(const std::string &path, LocationBl
         return generate_error_response(403, "Forbidden", "You do not have permissions to upload files", location);
 
     //create new file or overwite
-    std::cout << "HERE : " << path << std::endl;
     int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
     {
@@ -425,9 +414,6 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     std::string target = req.getTarget();
 
-    std::cout << "Post method called for target : " << target << std::endl;
-
-    std::cout << "Location matched to : " << location.path << std::endl;
     location.print();
 
     //check if POST is an accepted method in the location
@@ -440,7 +426,6 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     //construct the path of the ressource based on the root and upload path
     std::string path = get_POST_ressource_path(target, location);
-    std::cout << "Contructed ressource path: " << path << std::endl;
 
     //Check existence of the target
     struct stat st;

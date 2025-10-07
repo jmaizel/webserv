@@ -32,22 +32,10 @@ int main (int argc, char **argv)
     try
     {
         ServerMonitor webserv(config);
-        std::cout << "\033[31mPARSING SERVERS...\033[0m" << std::endl;
-        std::cout << std::endl;
         webserv.parse();
-        std::cout << std::endl;
-        std::cout << "\033[31mPRINTING AVAILABLE SERVERS...\033[0m" << std::endl;
-        std::cout << std::endl;
         webserv.print();
-        std::cout << std::endl;
-        std::cout << "\033[31mLAUCHING SERVERS...\033[0m" << std::endl;
-        std::cout << std::endl;
         webserv.init_servers();
-        std::cout << std::endl;
-        std::cout << "\033[31mAWAITING CLIENT CONNECTIONS..\033[0m." << std::endl;
-        std::cout << std::endl;
         webserv.run();
-        std::cout << std::endl;
     }
     catch (const std::exception& e)
     {

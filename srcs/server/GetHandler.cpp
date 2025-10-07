@@ -157,9 +157,6 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
 
     std::string target = req.getTarget();
 
-    std::cout << "GET method called for target : " << target << std::endl;
-
-    std::cout << "Location matched to : " << location.path << std::endl;
     location.print();
 
     //check if GET is an accepted method in the location
@@ -168,7 +165,6 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
     
     //construct the path of the location based on the root
     std::string path = get_ressource_path(target, location);
-    std::cout << "Contructed ressource path: " << path << std::endl;
 
     //Check existence of the ressource path
     struct stat st;
@@ -226,7 +222,6 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
     size_t dot = path.rfind('.');
     if (dot != std::string::npos)
     {
-        std::cout << "CGI ACTIVATED" << std::endl;
         //construct the file extension
         std::string ext = path.substr(dot + 1);
 

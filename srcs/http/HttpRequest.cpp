@@ -197,7 +197,6 @@ void    HttpRequest::parse(const std::string &buffer)
     this->_method = elems[0];
 
     //the uri can have a query string
-    std::cout << "HERE" << elems[1] << std::endl;
     if (elems[1].find("?") != std::string::npos)
     {
         size_t pos = elems[1].find_first_of("?");

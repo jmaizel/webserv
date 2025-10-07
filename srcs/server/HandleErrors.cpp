@@ -228,7 +228,6 @@ std::string Server::get_ressource_path(const std::string &target, const Location
 {
     const std::string   loc_prefix = loc.path;
     const std::string   root = loc.root;
-    std::cout << loc_prefix << " " << root << " " << target << std::endl;
 
     //hardcoded /
 
