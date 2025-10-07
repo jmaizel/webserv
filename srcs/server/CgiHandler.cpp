@@ -89,13 +89,13 @@ void ft_execute_cgi_child(const std::string& script_path, const HttpRequest& req
     close(pipe_out[0]); 
     close(pipe_out[1]);
     
-    //utiliser le root de la location au lieu de hardcoder "./www/"
+    // Utiliser le root de la location au lieu de hardcoder "./www/"
     chdir(location_root.c_str());
     
     ft_setup_cgi_environment(request, server_name, server_port, script_path);
     
     std::string script_name;
-    //calculer la longueur du root de la location pour l'enlever du script_path
+    // Calculer la longueur du root de la location pour l'enlever du script_path
     if (script_path.find(location_root + "/") == 0)
     {
         script_name = script_path.substr(location_root.length() + 1);
@@ -105,11 +105,11 @@ void ft_execute_cgi_child(const std::string& script_path, const HttpRequest& req
         script_name = script_path;
     }
 
-    //préparer les arguments pour Python uniquement
+    // Préparer les arguments pour Python uniquement
     char *args[] = {const_cast<char*>("python3"), 
                     const_cast<char*>(script_name.c_str()), NULL};
     
-    //utiliser execve avec le chemin complet de Python
+    // Utiliser execve avec le chemin complet de Python
     extern char **environ;
     execve("/usr/bin/python3", args, environ);
     
