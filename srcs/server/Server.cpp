@@ -411,7 +411,10 @@ void Server::handle_client_request(int client_fd)
     {
         //non blocking
         if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            std::cout << "NON BLOCKING" << std::endl;
             return;
+        }
         //actual recv error
         else
         {
