@@ -99,7 +99,7 @@ void ServerMonitor::run()
 
     fd_set read_fds;
 
-    //main loop01236
+    //main loop
     while (ServerMonitor::_flag == 0)
     {
         read_fds = this->_master_fds; //copy master into read_fds
@@ -109,7 +109,7 @@ void ServerMonitor::run()
         tv.tv_usec = 0;
 
         int activity = select(this->_max_fd + 1, &read_fds, NULL, NULL, &tv);
-        //for signal handling
+        //if select returns -1
         if (activity < 0)
         {
             if (errno == EINTR)
@@ -122,46 +122,63 @@ void ServerMonitor::run()
                 throw std::runtime_error("Select Error");
         }
 
-        //loop through servers 
-        for (size_t i = 0; i < _servers.size(); i++)
+        //if select returns 0 -> timeout check
+        else if (activity == 0)
         {
-            int server_fd = _servers[i].get_server_fd();
-
-            //new connection on this server
-            if (FD_ISSET(server_fd, &read_fds))
+            for (size_t i = 0; i < _servers.size(); i++)
             {
-                _servers[i].accept_new_client();
+                int server_fd = _servers[i].get_server_fd();
 
-                int new_client = _servers[i].get_last_client_fd();
-                if (new_client > 0)
+                //loop through all potential client fds
+                for (int fd = 0; fd <= this->_max_fd; fd++)
                 {
-                    FD_SET(new_client, &(this->_master_fds));
-                    if (new_client > this->_max_fd)
-                        this->_max_fd = new_client;        
+
+                    //check client timeouts
+                    if (_servers[i].is_client_fd(fd) && fd != server_fd)
+                    {
+                        _servers[i].check_timeouts(TIMEOUT_SEC, fd);
+                        if (!_servers[i].is_client_fd(fd))
+                        {
+                            FD_CLR(fd, &(this->_master_fds));
+                        }
+                    }
                 }
             }
+        }
 
-            //loop through all potential client fds
-            for (int fd = 0; fd <= this->_max_fd; fd++)
+        else
+        {
+            //if select returns > 0 -> fd is ready
+            for (size_t i = 0; i < _servers.size(); i++)
             {
+                int server_fd = _servers[i].get_server_fd();
 
-                //check client timeouts
-                if (_servers[i].is_client_fd(fd) && fd != server_fd)
+                //new connection on this server
+                if (FD_ISSET(server_fd, &read_fds))
                 {
-                    _servers[i].check_timeouts(TIMEOUT_SEC, fd);
-                    if (!_servers[i].is_client_fd(fd))
+                    _servers[i].accept_new_client();
+
+                    int new_client = _servers[i].get_last_client_fd();
+                    if (new_client > 0)
                     {
-                        FD_CLR(fd, &(this->_master_fds));
+                        FD_SET(new_client, &(this->_master_fds));
+                        if (new_client > this->_max_fd)
+                            this->_max_fd = new_client;        
                     }
                 }
 
-                //check activities
-                if (FD_ISSET(fd, &read_fds) && fd != server_fd && _servers[i].is_client_fd(fd))
+                //loop through all potential client fds
+                for (int fd = 0; fd <= this->_max_fd; fd++)
                 {
-                    _servers[i].handle_client_request(fd);
-                    if (!_servers[i].is_client_fd(fd))
+
+                    //check activities
+                    if (FD_ISSET(fd, &read_fds) && fd != server_fd && _servers[i].is_client_fd(fd))
                     {
-                        FD_CLR(fd, &(this->_master_fds));
+                        _servers[i].handle_client_request(fd);
+                        if (!_servers[i].is_client_fd(fd))
+                        {
+                            FD_CLR(fd, &(this->_master_fds));
+                        }
                     }
                 }
             }
