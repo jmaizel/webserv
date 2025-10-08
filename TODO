@@ -1,4 +1,0 @@
-1. test redirections (should it be relative path or absolute path)
-2. test when there are 200-300 concurrent servers with each a few clients
-3. test content length better
-4. test chunked encoding better

@@ -98,17 +98,19 @@ void ServerMonitor::run()
     std::cout << "Starting server(s) with " << _servers.size() << " listening socket(s)..." << std::endl;
 
     fd_set read_fds;
+    fd_set write_fds;
 
     //main loop
     while (ServerMonitor::_flag == 0)
     {
-        read_fds = this->_master_fds; //copy master into read_fds
+        read_fds = this->_master_fds;
+        write_fds = this->_master_fds;
 
         struct timeval tv;
         tv.tv_sec  = 1;
         tv.tv_usec = 0;
 
-        int activity = select(this->_max_fd + 1, &read_fds, NULL, NULL, &tv);
+        int activity = select(this->_max_fd + 1, &read_fds, &write_fds, NULL, &tv);
         //if select returns -1
         if (activity < 0)
         {
@@ -170,6 +172,15 @@ void ServerMonitor::run()
                 //loop through all potential client fds
                 for (int fd = 0; fd <= this->_max_fd; fd++)
                 {
+                    //check client timeouts
+                    if (_servers[i].is_client_fd(fd) && fd != server_fd)
+                    {
+                        _servers[i].check_timeouts(TIMEOUT_SEC, fd);
+                        if (!_servers[i].is_client_fd(fd))
+                        {
+                            FD_CLR(fd, &(this->_master_fds));
+                        }
+                    }
 
                     //check activities
                     if (FD_ISSET(fd, &read_fds) && fd != server_fd && _servers[i].is_client_fd(fd))
@@ -211,10 +222,6 @@ LocationBloc    get_location_bloc(std::vector<std::string> &tokens, std::string 
             key_values.push_back(tokens[*i]);
             (*i)++;
         }
-        std::cout << "location key value : ";
-        for (size_t j = 0; j < key_values.size(); ++j)
-            std::cout << key_values[j] << " ";
-        std::cout << std::endl;
         if (key_values.empty())
             continue ;
         if (key_values.size() < 2)
@@ -396,10 +403,6 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
             key_values.push_back(tokens[i]);
             i++;
         }
-        std::cout << "server key value : ";
-        for (size_t j = 0; j < key_values.size(); ++j)
-            std::cout << key_values[j] << " ";
-        std::cout << std::endl;
 
         if (key_values.empty())
             continue ;
@@ -520,24 +523,67 @@ ServerBloc  get_server_bloc(std::vector<std::string> &tokens)
     return (sbloc);
 }
 
-bool    is_valid_server_bloc(ServerBloc &sbloc)
+bool path_exists(const std::string &path)
 {
-    //a minimal server has: listen, root
-    if (sbloc.listen == -1)
-        throw (std::runtime_error("Server has no listening port"));
-    if (sbloc.root.empty())
-        throw (std::runtime_error("Server has no root"));
-    if (sbloc.upload_enable && sbloc.upload_path == "")
-        throw (std::runtime_error("Server has upload files enabled but no path"));
+    struct stat info;
+    return (stat(path.c_str(), &info) == 0);
+}
 
+bool is_directory(const std::string &path)
+{
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0)
+        return false;
+    return S_ISDIR(info.st_mode);
+}
+
+
+bool is_valid_server_bloc(ServerBloc &sbloc)
+{
+    //must have a listen and root
+    if (sbloc.listen == -1)
+        throw std::runtime_error("Server has no listening port");
+    if (sbloc.root.empty())
+        throw std::runtime_error("Server has no root");
+
+    //check that root exists and is a directory
+    if (!path_exists(sbloc.root))
+        throw std::runtime_error("Server root : " + sbloc.root + " does not exist");
+    if (!is_directory(sbloc.root))
+        throw std::runtime_error("Server root : " + sbloc.root + " is not a directory");
+
+    //check upload conditions
+    if (sbloc.upload_enable && sbloc.upload_path.empty())
+        throw std::runtime_error("Server has upload enabled but no path");
+
+    if (sbloc.upload_enable)
+    {
+        if (!path_exists(sbloc.upload_path))
+            throw std::runtime_error("Upload path : " + sbloc.upload_path + " does not exist");
+        if (!is_directory(sbloc.upload_path))
+            throw std::runtime_error("Upload path " + sbloc.upload_path + " is not a directory");
+    }
+
+    //validate all locations
     std::map<std::string, LocationBloc>::iterator it;
     for (it = sbloc.locations.begin(); it != sbloc.locations.end(); ++it)
     {
         LocationBloc &loc = it->second;
 
+        if (!path_exists(loc.root))
+            throw std::runtime_error("Location root : " + loc.root + " does not exist");
+        if (!is_directory(loc.root))
+            throw std::runtime_error("Location root : " + loc.root + " is not a directory");
+
         if (loc.upload_enable && loc.upload_path.empty())
+            throw std::runtime_error("Location " + it->first + " has upload enabled but no path");
+
+        if (loc.upload_enable)
         {
-            throw (std::runtime_error("Location " + it->first + " has upload enabled but no path"));
+            if (!path_exists(loc.upload_path))
+                throw std::runtime_error("Location : " + it->first + " upload path does not exist");
+            if (!is_directory(loc.upload_path))
+                throw std::runtime_error("Location : " + it->first + " upload path is not a directory");
         }
     }
 
@@ -681,14 +727,9 @@ void    ServerMonitor::parse()
     }
     file.close();
     trimmed = buffer.str();
-    std::cout << "BUFFER STRING :\n" << trimmed << "\n" << std::endl; 
 
     //tokenizing the whole string
-    std::cout << "TOKENS : ";
     tokens = tokenize(trimmed);
-    for (size_t i = 0; i < tokens.size(); ++i)
-            std::cout << tokens[i] << " ";
-    std::cout << "\n" << std::endl;
     
     //check bracket placement
     try{valid_brackets(tokens);}
@@ -709,11 +750,6 @@ void    ServerMonitor::parse()
             vserver.push_back(tokens[i]);
             i++;
         }
-
-        std::cout << "SERVER BLOCK" << std::endl;
-        for (size_t j = 0; j < vserver.size(); ++j)
-            std::cout << vserver[j] << std::endl;
-        std::cout << std::endl << std::endl;
 
         //creating the server bloc
         ServerBloc sbloc = get_server_bloc(vserver);

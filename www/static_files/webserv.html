@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Webserv</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #07000b;        /* almost pure black with a faint purple undertone */
+      --fg: #e9e6ff;
+      --panel: rgba(255, 255, 255, 0.04);
+      --btn: #6a27a3;
+      --btn-hover: #8b40d0;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      text-align: center;
+      padding: 8rem 4rem;                /* huge interior spacing */
+      border-radius: 36px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+      width: 90vw;                       /* fills almost entire screen width */
+      height: 80vh;                      /* fills almost entire screen height */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    h1 {
+      margin: 0 0 2rem;
+      font-size: 4rem;
+      letter-spacing: 2px;
+    }
+
+    p {
+      margin: 0 0 3rem;
+      opacity: 0.9;
+      font-size: 1.4rem;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      padding: 1.5rem 3rem;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--btn);
+      color: white;
+      transition: transform 150ms ease, background 150ms ease;
+      font-size: 1.3rem;
+    }
+
+    .btn:hover { background: var(--btn-hover); transform: translateY(-3px); }
+    .btn:active { transform: translateY(0); }
+  </style>
+</head>
+<body>
+  <main class="card" role="main" aria-label="Webserv home">
+    <h1>Webserv</h1>
+    <p>Discover the Webserv Beast.</p>
+
+    <form method="GET" action="discover.html">
+      <button type="submit" class="btn">Discover</button>
+    </form>
+  </main>
+</body>
+</html>

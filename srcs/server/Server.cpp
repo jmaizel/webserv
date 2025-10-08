@@ -297,7 +297,6 @@ void Server::reset_timeout(int client_fd)
     if (it != _clients_timeout.end())
     {
         it->second = std::time(NULL);
-        std::cout << "[DEBUG] Timeout reset for fd=" << client_fd << std::endl;
     }
 }
 
@@ -313,7 +312,6 @@ void Server::check_timeouts(int timeoutSec, int client)
     time_t last = it->second;
     if (now - last > timeoutSec)
     {
-        std::cout << "Client " << client_fd << " timed out" << std::endl;
         //close + remove fd everywhere
         disconnect_client(client_fd);
     }
@@ -468,12 +466,10 @@ void Server::handle_client_request(int client_fd)
                 size_t content_length = safe_atosize_t(ith->second.c_str());
                 size_t header_end = client_buffer.find("\r\n\r\n") + 4;
                 body_buffer = client_buffer.substr(header_end);
-                std::cout << "received cl : " << content_length << "\n" << "body buffer : "<< body_buffer << std::endl;
                 if (body_buffer.size() < content_length)
                 {
                     body_buffer.append(buffer, n);
                     client_buffer.append(buffer, n);
-                    std::cout << "Constructed Body: " << body_buffer << std::endl;
                     //if we still don't have the buffer
                     if (body_buffer.size() < content_length)
                         return;
@@ -492,7 +488,6 @@ void Server::handle_client_request(int client_fd)
                     //append to the body buffer and the client buffer
                     body_buffer.append(buffer, n);
                     client_buffer.append(buffer, n);
-                    std::cout << "Constructed Body: " << body_buffer << std::endl;
                     //if we still don't have the buffer
                     if (body_buffer.find("0\r\n") == std::string::npos)
                         return;

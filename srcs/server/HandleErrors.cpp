@@ -55,7 +55,7 @@ HttpResponse Server::generate_success_response(int code, const std::string &reas
     return (res);
 }
 
-HttpResponse Server::generate_redirect_response(const std::vector<std::string> &redirect, LocationBloc &location)
+HttpResponse Server::generate_redirect_response(const std::vector<std::string> &redirect, LocationBloc &loc)
 {
     //if redirect code is of type 3xx then it is a redirection. use GET to get the ressource
     size_t code = safe_atosize_t(redirect[0]);
@@ -63,6 +63,7 @@ HttpResponse Server::generate_redirect_response(const std::vector<std::string> &
     //all the actual redirect codes
     if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308)
     {
+        std::cout << redirect[1] << std::endl;
         std::string location = redirect[1];
         HttpResponse res;
 
@@ -85,8 +86,8 @@ HttpResponse Server::generate_redirect_response(const std::vector<std::string> &
 
     //otherwise it is just an arbitrary error code with a raison
     if (redirect.size() == 2)
-        return generate_error_response(code, redirect[1], "Return option was called", location);
-    return generate_error_response(code, "Unspecified", "Return option was called", location);
+        return generate_error_response(code, redirect[1], "Return option was called", loc);
+    return generate_error_response(code, "Unspecified", "Return option was called", loc);
 }
 
 
