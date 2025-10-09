@@ -409,19 +409,8 @@ void Server::handle_client_request(int client_fd)
     //non blocking mode (recv blocks normally)
     else if (n < 0)
     {
-        //non blocking
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-        {
-            std::cout << "NON BLOCKING" << std::endl;
-            return;
-        }
-        //actual recv error
-        else
-        {
             disconnect_client(client_fd);
-            std::cout << "Error: " << errno << std::endl;
             return ;
-        }
     }
 
     //append client data

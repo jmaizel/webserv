@@ -33,7 +33,8 @@ struct LocationBloc
     bool                        autoindex;
     bool                        upload_bool_present;
     bool                        autoindex_bool_present;
-    bool                        client_max_body_size_present;           
+    bool                        client_max_body_size_present;
+    bool                        error_page_present;       
     LocationBloc();
     LocationBloc(ServerBloc &s);
     ~LocationBloc();

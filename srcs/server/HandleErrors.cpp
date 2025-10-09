@@ -121,14 +121,14 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
         int c = safe_atosize_t(location.error_page[i]);
         error_codes.push_back(c);
     }
-
     //check if our code matches one of the configured error codes
     for (size_t i = 0; i < error_codes.size(); ++i)
     {
         if (error_codes[i] == code)
         {
             //build the path
-            std::string path = location.root;
+            std::string path = location.root + uri;
+            std::cout << path << std::endl;
 
             //check file existence
             if (access(path.c_str(), F_OK) < 0)
@@ -141,6 +141,13 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
             {
                 throw std::runtime_error("403");
             }
+
+            struct stat st;
+            if (stat(path.c_str(), &st) < 0)
+                throw std::runtime_error("500");
+
+            if (S_ISDIR(st.st_mode))
+                throw std::runtime_error("403");
         
             int fd = open(path.c_str(), O_RDONLY);
             if (fd < 0)
@@ -167,6 +174,7 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
             res.setHeaders("Content-Length", to_string98(body.size()));
             res.setHeaders("Connection", "close");
             res.setBody(body);
+            res.print();
             return (res);
         }
     }
