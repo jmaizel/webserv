@@ -133,14 +133,26 @@ HttpResponse Server::handle_json(const std::string &body, const std::string &pat
 
         int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0)
-            return generate_error_response(500, " Internel Server Error", "File exists but read failed", location);
+            return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
 
         //if there is content write it
         it = sorted_body.find("content");
         if (it != sorted_body.end())
-            write(fd, (it->second).c_str(), (it->second).size());
+        {
+            ssize_t bytes = write(fd, (it->second).c_str(), (it->second).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
+        }
         close(fd);
-        return generate_success_response(201, "OK", "File uploaded successfully");
+        return generate_success_response(201, "Created", "File uploaded successfully");
     }
 
     //random data
@@ -155,9 +167,19 @@ HttpResponse Server::handle_json(const std::string &body, const std::string &pat
         int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0)
             return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
-        write(fd, (body).c_str(), (body).size());
+        ssize_t bytes = write(fd, (body).c_str(), (body).size());
+        if (bytes < 0)
+        {
+            close(fd);
+            return generate_error_response(500, "Internel Server Error", "write failed", location);
+        }
+        else if (bytes == 0)
+        {
+            close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");
+        }
         close(fd);
-            return generate_success_response(201, "Created", "File uploaded successfully");;
+        return generate_success_response(201, "Created", "File uploaded successfully");;
     }
     return generate_success_response(200, "OK", "Data processed successfully");
 }
@@ -289,7 +311,17 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
             int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0)
                 return generate_error_response(500, "Internel Server Error", "Read failed", location);
-            write(fd, (content).c_str(), (content).size());
+            ssize_t bytes = write(fd, (content).c_str(), (content).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
             close(fd);
             files_created++;
         }
@@ -306,7 +338,17 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
             int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0)
                 return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
-            write(fd, (content).c_str(), (content).size());
+            ssize_t bytes = write(fd, (content).c_str(), (content).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
             close(fd);
             return generate_success_response(201, "Created", "File uploaded successfully");;
         }
@@ -351,7 +393,19 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
         //if there is content write it
         it = sorted_body.find("content");
         if (it != sorted_body.end())
-            write(fd, (it->second).c_str(), (it->second).size());
+        {
+            ssize_t bytes = write(fd, (it->second).c_str(), (it->second).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
+        }
         close(fd);
 
         return generate_success_response(200, "OK", "File overwrite successfull");
@@ -373,7 +427,19 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
         //if there is content write it
         it = sorted_body.find("content");
         if (it != sorted_body.end())
-            write(fd, (it->second).c_str(), (it->second).size());
+        {
+            ssize_t bytes = write(fd, (it->second).c_str(), (it->second).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
+        }
         close(fd);
 
         return generate_success_response(201, "Created", "File uploaded successfully");
@@ -391,9 +457,18 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
         int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0)
             return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
-        write(fd, (body).c_str(), (body).size());
+        ssize_t bytes = write(fd, (body).c_str(), (body).size());
+        if (bytes < 0)
+        {
+            close(fd);
+            return generate_error_response(500, "Internel Server Error", "write failed", location);
+        }
+        else if (bytes == 0)
+        {
+            close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");
+        }
         close(fd);
-
         return generate_success_response(201, "Created", "File uploaded successfully");
     }
     return generate_success_response(200, "OK", "Data proccessed successfully");
@@ -421,7 +496,19 @@ HttpResponse    Server::handle_file_response(const std::string &path, LocationBl
 
     //write body content if any
     if (!body.empty())
-        write(fd, body.c_str(), body.size());
+    {
+        ssize_t bytes = write(fd, body.c_str(), body.size());
+        if (bytes < 0)
+        {
+            close(fd);
+            return generate_error_response(500, "Internel Server Error", "write failed", location);
+        }
+        else if (bytes == 0)
+        {
+            close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");
+        }
+    }
 
     close(fd);
 
@@ -443,7 +530,17 @@ HttpResponse    Server::handle_generic_type(const std::string &body, const std::
     int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
         return generate_error_response(500, "Internel Server Error", "Read failed", location);
-    write(fd, (body).c_str(), (body).size());
+    ssize_t bytes = write(fd, (body).c_str(), (body).size());
+    if (bytes < 0)
+    {
+        close(fd);
+        return generate_error_response(500, "Internel Server Error", "write failed", location);
+    }
+    else if (bytes == 0)
+    {
+        close(fd);
+        return generate_success_response(201, "Created", "File uploaded successfully");
+    }
     close(fd);
 
     return generate_success_response(201, "Created", "File uploaded successfully");

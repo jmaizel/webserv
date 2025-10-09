@@ -231,7 +231,16 @@ void Server::accept_new_client(void)
             "Connection: close\r\n"
             "Content-Length: 0\r\n"
             "\r\n";
-        send(client_fd, res.c_str(), res.size(), 0);
+        ssize_t bytes = send(client_fd, res.c_str(), res.size(), 0);
+        if (bytes < 0)
+        {
+            disconnect_client(client_fd);
+            return ;
+        }
+        if (bytes == 0)
+        {
+            return ;
+        }
         close(client_fd);
         std::cout << "Refused client (server full) on " << _name << std::endl;
         return;
@@ -327,7 +336,17 @@ void    Server::generate_error_response_special(int client_fd, int code, const s
     default_location_it = this->_locations.find("/");
     location = default_location_it->second;
     res = generate_error_response(code, raison, details, location);
-    send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    ssize_t bytes = send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    if (bytes < 0)
+    {
+        disconnect_client(client_fd);
+        return ;
+    }
+    if (bytes == 0)
+    {
+        return ;
+
+    }
 }
 
 std::string decode_chunked(std::string &raw)
@@ -404,7 +423,6 @@ void Server::handle_client_request(int client_fd)
         return;
     }
 
-    //non blocking mode (recv blocks normally)
     else if (n < 0)
     {
             disconnect_client(client_fd);
@@ -538,8 +556,17 @@ void Server::handle_client_request(int client_fd)
         res.setHeaders("Connection", "close");
 
     //send response to client
-    send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    ssize_t bytes = send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    if (bytes < 0)
+    {
+        disconnect_client(client_fd);
+        return ;
+    }
+    if (bytes == 0)
+    {
+        return ;
 
+    }
     if (keep_alive)
     {
         //reset the timeout

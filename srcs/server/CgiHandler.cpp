@@ -261,7 +261,12 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
     //si POST, écrire le body dans le pipe
     if (request.getMethod() == "POST" && !request.getBody().empty())
     {
-        write(pipe_in[1], request.getBody().c_str(), request.getBody().length());
+        ssize_t bytes = write(pipe_in[1], request.getBody().c_str(), request.getBody().length());
+        if (bytes < 0)
+        {
+            close(pipe_in[1]);
+            return generate_error_response(500, "Internal Server Error", "Failed to send POST arguments", location);
+        }
     }
     close(pipe_in[1]);
 
