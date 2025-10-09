@@ -26,7 +26,7 @@
 #define HEADER_TIMEOUT 60
 #define BODY_TIMEOUT 60
 #define MAX_CLIENTS 1000
-#define TIMEOUT_SEC 30
+#define TIMEOUT_SEC 60
 
 size_t                      safe_hextosize_t(const std::string &s);
 std::string                 generate_upload_filename();

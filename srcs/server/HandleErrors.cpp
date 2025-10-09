@@ -55,7 +55,7 @@ HttpResponse Server::generate_success_response(int code, const std::string &reas
     return (res);
 }
 
-HttpResponse Server::generate_redirect_response(const std::vector<std::string> &redirect, LocationBloc &location)
+HttpResponse Server::generate_redirect_response(const std::vector<std::string> &redirect, LocationBloc &loc)
 {
     //if redirect code is of type 3xx then it is a redirection. use GET to get the ressource
     size_t code = safe_atosize_t(redirect[0]);
@@ -63,6 +63,7 @@ HttpResponse Server::generate_redirect_response(const std::vector<std::string> &
     //all the actual redirect codes
     if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308)
     {
+        std::cout << redirect[1] << std::endl;
         std::string location = redirect[1];
         HttpResponse res;
 
@@ -85,8 +86,8 @@ HttpResponse Server::generate_redirect_response(const std::vector<std::string> &
 
     //otherwise it is just an arbitrary error code with a raison
     if (redirect.size() == 2)
-        return generate_error_response(code, redirect[1], "Return option was called", location);
-    return generate_error_response(code, "Unspecified", "Return option was called", location);
+        return generate_error_response(code, redirect[1], "Return option was called", loc);
+    return generate_error_response(code, "Unspecified", "Return option was called", loc);
 }
 
 
@@ -120,14 +121,14 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
         int c = safe_atosize_t(location.error_page[i]);
         error_codes.push_back(c);
     }
-
     //check if our code matches one of the configured error codes
     for (size_t i = 0; i < error_codes.size(); ++i)
     {
         if (error_codes[i] == code)
         {
             //build the path
-            std::string path = location.root;
+            std::string path = location.root + uri;
+            std::cout << path << std::endl;
 
             //check file existence
             if (access(path.c_str(), F_OK) < 0)
@@ -140,6 +141,13 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
             {
                 throw std::runtime_error("403");
             }
+
+            struct stat st;
+            if (stat(path.c_str(), &st) < 0)
+                throw std::runtime_error("500");
+
+            if (S_ISDIR(st.st_mode))
+                throw std::runtime_error("403");
         
             int fd = open(path.c_str(), O_RDONLY);
             if (fd < 0)
@@ -166,6 +174,7 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
             res.setHeaders("Content-Length", to_string98(body.size()));
             res.setHeaders("Connection", "close");
             res.setBody(body);
+            res.print();
             return (res);
         }
     }
