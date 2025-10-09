@@ -221,10 +221,11 @@ void Server::accept_new_client(void)
         close(client_fd);
         return;
     }
+    if (client_fd > _max_fd)
+        _max_fd = client_fd;
 
-    if (_client_fds.size() >= MAX_CLIENTS)
+    if (_max_fd >= FD_SETSIZE || _client_fds.size() >= MAX_CLIENTS)
     {
-        //TODO add the default page if exist!
         std::string res =
             "HTTP/1.1 503 Service Unavailable\r\n"
             "Connection: close\r\n"
@@ -242,9 +243,6 @@ void Server::accept_new_client(void)
     _client_buffers[client_fd] = std::string("");
     _clients_timeout[client_fd] = time(NULL);
     
-    if (client_fd > _max_fd)
-        _max_fd = client_fd;
-
     std::cout << "New client id=" << client_fd << " connected to server " << _name << std::endl;
 }
 
@@ -420,7 +418,6 @@ void Server::handle_client_request(int client_fd)
         if (client_buffer.find("\r\n\r\n") == std::string::npos)
         {
             client_buffer.append(buffer, n);
-            std::cout << "Client: " << client_fd << ": Constructed Headers: " << client_buffer << std::endl;
             //if we still don't have it send it back to select
             if (client_buffer.find("\r\n\r\n") == std::string::npos)
                 return;
@@ -433,8 +430,6 @@ void Server::handle_client_request(int client_fd)
                 disconnect_client(client_fd);
                 return ;
             }
-            std::cout << "Headers Received :\n" << std::endl;
-            req.print();
             reset_timeout(client_fd);
             //right when you get the headers clear the buffer
             n = 0;
@@ -446,7 +441,6 @@ void Server::handle_client_request(int client_fd)
         //do we have all the body (Content-Lenght)
         if (req.getMethod() == "POST")
         {
-            std::cout << "Entering POST" << std::endl;
             //get content-length
             std::map<std::string, std::string> headers = req.getHeaders();
             std::map<std::string, std::string>::iterator ith = headers.find("Content-Length");
@@ -489,7 +483,6 @@ void Server::handle_client_request(int client_fd)
             //if the body headers is messed up
             else
             {
-                std::cout << "hello" << std::endl;
                 generate_error_response_special(client_fd, 400, "Bad Request", "Unkown POST directive");
                 disconnect_client(client_fd);
                 return;
@@ -522,7 +515,6 @@ void Server::handle_client_request(int client_fd)
         }
         req.setBody(body);
     }
-    req.print();
     //generate response
     HttpResponse res = generate_response(req);
     std::string response = res.toStr();

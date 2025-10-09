@@ -170,14 +170,6 @@ bool    HttpRequest::is_valid_headers()const
     if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
         throw std::runtime_error("HTTP Version Not Supported");
 
-    //host header required in HTTP/1.1
-    if (_version == "HTTP/1.1")
-    {
-        std::map<std::string, std::string>::const_iterator it = _headers.find("Host");
-        if (it == _headers.end() || it->second.empty())
-            throw std::runtime_error("400 Host header required in HTTP/1.1");
-    }
-
     //Content-Length check
     std::map<std::string, std::string>::const_iterator it = _headers.find("Content-Length");
     if (it != _headers.end())

@@ -135,18 +135,12 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
 
     std::string target = req.getTarget();
 
-    std::cout << "GET method called for target : " << target << std::endl;
-
-    std::cout << "Location matched to : " << location.path << std::endl;
-    location.print();
-
     //check if GET is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method", location);
     
     //construct the path of the location based on the root
     std::string path = get_ressource_path(target, location);
-    std::cout << "Contructed ressource path: " << path << std::endl;
 
     //Check existence of the ressource path
     struct stat st;
@@ -210,10 +204,8 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
         //check in location.cgi_extension
         for (size_t i = 0; i < location.cgi_extension.size(); ++i)
         {
-            std::cout << ext << std::endl;
             if (ext == location.cgi_extension[i])
             {
-                std::cout << "CGI ACTIVATED" << std::endl;
                 //file should be executed as CGI
                 return generate_cgi_response(path, req, location);
             }

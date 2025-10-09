@@ -260,7 +260,6 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
         std::string content = body.substr(content_start, next_boundary - content_start);
 
         //parse Content-Disposition
-        std::cout << "HERE : " << content << std::endl;
         size_t cd_pos = headers.find("Content-Disposition:");
         if (cd_pos == std::string::npos)
             continue;
@@ -456,11 +455,6 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     std::string target = req.getTarget();
 
-    std::cout << "Post method called for target : " << target << std::endl;
-
-    std::cout << "Location matched to : " << location.path << std::endl;
-    location.print();
-
     //check if POST is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method", location);
@@ -471,7 +465,6 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     //construct the path of the ressource based on the root and upload path
     std::string path = get_POST_ressource_path(target, location);
-    std::cout << "Contructed ressource path: " << path << std::endl;
 
     //Check existence of the target
     struct stat st;

@@ -63,7 +63,6 @@ HttpResponse Server::generate_redirect_response(const std::vector<std::string> &
     //all the actual redirect codes
     if (code == 301 || code == 302 || code == 303 || code == 307 || code == 308)
     {
-        std::cout << redirect[1] << std::endl;
         std::string location = redirect[1];
         HttpResponse res;
 
@@ -128,7 +127,6 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
         {
             //build the path
             std::string path = location.root + uri;
-            std::cout << path << std::endl;
 
             //check file existence
             if (access(path.c_str(), F_OK) < 0)
@@ -174,7 +172,6 @@ HttpResponse Server::generate_custom_error_response(int code, LocationBloc &loca
             res.setHeaders("Content-Length", to_string98(body.size()));
             res.setHeaders("Connection", "close");
             res.setBody(body);
-            res.print();
             return (res);
         }
     }
@@ -237,9 +234,6 @@ std::string Server::get_ressource_path(const std::string &target, const Location
 {
     const std::string   loc_prefix = loc.path;
     const std::string   root = loc.root;
-    std::cout << loc_prefix << " " << root << " " << target << std::endl;
-
-    //hardcoded /
 
     //strip common part to isolate the relative path
     std::string relative;
