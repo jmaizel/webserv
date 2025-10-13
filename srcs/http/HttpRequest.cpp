@@ -236,6 +236,8 @@ void    HttpRequest::parse(const std::string &buffer)
     {
         this->_target = normalize_uri(elems[1]);
     }
+    if (this->_target.size() > 100000)
+        throw std::runtime_error("415");
     this->_version = elems[2];
 
     //check the headers

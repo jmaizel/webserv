@@ -560,8 +560,27 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
     if(req.getBody().size() > location.client_max_body_size)
         return generate_error_response(413, "Payload Too Large", "Body too large", location);
 
+    std::string path = get_ressource_path(target, location);
+    //check if it is CGI
+    size_t dot = path.rfind('.');
+    if (dot != std::string::npos)
+    {
+        //construct the file extension
+        std::string ext = path.substr(dot);
+
+        //check in location.cgi_extension
+        for (size_t i = 0; i < location.cgi_extension.size(); ++i)
+        {
+            if (ext == location.cgi_extension[i])
+            {
+                //file should be executed as CGI
+                return generate_cgi_response(path, req, location);
+            }
+        }
+    }
+
     //construct the path of the ressource based on the root and upload path
-    std::string path = get_POST_ressource_path(target, location);
+    path = get_POST_ressource_path(target, location);
 
     //Check existence of the target
     struct stat st;
@@ -636,24 +655,6 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
         else
         {
             return (handle_generic_type(req.getBody(), path, location));
-        }
-    }
-
-    //check if it is CGI
-    size_t dot = path.rfind('.');
-    if (dot != std::string::npos)
-    {
-        //construct the file extension
-        std::string ext = path.substr(dot);
-
-        //check in location.cgi_extension
-        for (size_t i = 0; i < location.cgi_extension.size(); ++i)
-        {
-            if (ext == location.cgi_extension[i])
-            {
-                //file should be executed as CGI
-                return generate_cgi_response(path, req, location);
-            }
         }
     }
 

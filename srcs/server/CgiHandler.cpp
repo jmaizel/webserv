@@ -237,7 +237,7 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
     int pipe_in[2], pipe_out[2];
 
     if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1)
-        return generate_error_response(403, "Forbidden", "Pipe failed", location);
+        return generate_error_response(500, "Internal Server Error", "Pipe failed", location);
 
     pid_t pid = fork();
     if (pid == -1)
@@ -246,7 +246,7 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
         close(pipe_in[1]);
         close(pipe_out[0]); 
         close(pipe_out[1]);
-        return generate_error_response(403, "Forbidden", "Fork failed", location);
+        return generate_error_response(500, "Internal Server Error", "Fork failed", location);    
     }
 
     if (pid == 0)
