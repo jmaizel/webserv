@@ -167,8 +167,27 @@ bool    HttpRequest::is_valid_headers()const
     if (_target[0] != '/')
         throw std::runtime_error("Invalid request target");
     //HTTP version
-    if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
-        throw std::runtime_error("HTTP Version Not Supported");
+    if (_version.compare(0, 5, "HTTP/") != 0)
+        throw std::runtime_error("Malformed HTTP Version");
+    std::string number = _version.substr(5);
+    std::string::size_type dot = number.find('.');
+    //should have a dot
+    if (dot == std::string::npos)
+        throw std::runtime_error("Malformed HTTP Supported");
+    std::string major_str = number.substr(0, dot);
+    std::string minor_str = number.substr(dot + 1);
+    //must not be empty
+    if (major_str.empty() || minor_str.empty())
+         throw std::runtime_error("Malformed HTTP Supported");
+
+    //must contain only digits
+    for (size_t i = 0; i < major_str.size(); i++)
+        if (!std::isdigit(major_str[i]))
+            throw std::runtime_error("Malformed HTTP Supported");
+
+    for (size_t i = 0; i < minor_str.size(); i++)
+        if (!std::isdigit(minor_str[i]))
+            throw std::runtime_error("Malformed HTTP Supported");
 
     //Content-Length check
     std::map<std::string, std::string>::const_iterator it = _headers.find("Content-Length");
@@ -236,8 +255,6 @@ void    HttpRequest::parse(const std::string &buffer)
     {
         this->_target = normalize_uri(elems[1]);
     }
-    if (this->_target.size() > 100000)
-        throw std::runtime_error("415");
     this->_version = elems[2];
 
     //check the headers

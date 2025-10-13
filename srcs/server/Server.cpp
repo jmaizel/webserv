@@ -263,16 +263,18 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     std::string     method = req.getMethod();
     //get the target of the request
     std::string     target = req.getTarget();
+    //get the http version
+     std::string    version = req.getVersion();
     //get the corresponding location of the request (there is always one, the default server root
     std::map<std::string, LocationBloc>::iterator   it = find_best_location(target);
     LocationBloc location = it->second;
 
-    if (req.getFlag() == 400)
-    {
-        res =  res = generate_error_response(400, "Bad Request", "The browser sent a request that this server could not understand", location);
-    }
+    if (version != "HTTP/1.1" && version != "HTTP/1.0")
+        return generate_error_response(505, "HTTP Version Not Supported", "This HTTP version is not supported by the server", location);
+    if (target.size() > 8192)
+        return generate_error_response(414, "URI too long", "Requested URI is too long", location);
     //check if there are no redirects in the server -> redirect directly
-    if (this->_redirect.size() > 1)
+    else if (this->_redirect.size() > 1)
         return generate_redirect_response(this->_redirect, location);
 
     //check if there are no redirects in the location -> redirect directly
@@ -538,7 +540,10 @@ void Server::handle_client_request(int client_fd)
     std::string response = res.toStr();
 
     //decide keep-alive or close
-    bool keep_alive = true; // default for HTTP/1.1
+    bool keep_alive = false; // default for HTTP/1.1
+
+    if (req.getVersion() == "HTTP/1.1")
+        keep_alive = true;
 
     std::map<std::string, std::string> headers = req.getHeaders();
     std::map<std::string, std::string>::iterator ith = headers.find("Connection");

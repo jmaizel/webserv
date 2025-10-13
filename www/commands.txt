@@ -1,0 +1,105 @@
+-----------
+GET METHODS
+-----------
+
+# 1. Root index page
+curl -v http://localhost:8080/
+
+# 2. Specific static file
+curl -v http://localhost:8080/test.html
+
+# 3. Nested directory file
+curl -v http://localhost:8080/assets/image.png
+
+# 4. Nonexistent file (should trigger 404)
+curl -v http://localhost:8080/ghost.html
+
+# 5. Forbidden directory (no index, no autoindex)
+curl -v http://localhost:8080/private/
+
+# 6. Autoindex enabled directory (if enabled in config)
+curl -v http://localhost:8080/upload/
+
+# 7. CGI script (GET method)
+curl -v http://localhost:8080/cgi-bin/time.py
+
+# 8. Redirect test (defined with `return 301 /new-path`)
+curl -v http://localhost:8080/old-path
+
+# 9. Error page file directly (to verify it serves fine)
+curl -v http://localhost:8080/404.html
+
+# 10. Invalid or malformed path (check error handling)
+curl -v http://localhost:8080/../../etc/passwd
+
+
+------------
+POST METHODS
+------------
+
+# 1. Upload a simple text file (multipart form-data)
+curl -v -X POST -F "file=@test.txt" http://localhost:8080/upload/
+
+# 2. Upload to a specific filename (multipart form-data)
+curl -v -X POST -F "file=@README.md" http://localhost:8080/upload/readme.md
+
+# 3. Raw body upload (application/octet-stream)
+curl -v -X POST --data-binary @test.txt http://localhost:8080/upload/raw.txt
+
+# 4. JSON data to a CGI script
+curl -v -X POST -H "Content-Type: application/json" -d '{"msg":"hello"}' http://localhost:8080/cgi-bin/echo.py
+
+# 5. Form data to a CGI script
+curl -v -X POST -d "username=admin&password=1234" http://localhost:8080/cgi-bin/login.py
+
+# 6. POST to a non-existent path (should return 404)
+curl -v -X POST -d "test=data" http://localhost:8080/nothing/here
+
+# 7. POST too large (test body size limit → expect 413)
+base64 /dev/urandom | head -c 2000000 > big.txt
+curl -v -X POST --data-binary @big.txt http://localhost:8080/upload/
+rm big.txt
+
+# 8. POST to a GET-only route (should return 405 Method Not Allowed)
+curl -v -X POST -d "data=invalid" http://localhost:8080/
+
+# 9. POST without body (should still respond 200 or 204)
+curl -v -X POST http://localhost:8080/upload/empty.txt
+
+# 10. POST to a redirect location (should return 301 or 308)
+curl -v -X POST -d "foo=bar" http://localhost:8080/old-path
+
+
+------------
+POST METHODS
+------------
+
+# 1. Delete an existing uploaded file
+curl -v -X DELETE http://localhost:8080/upload/test.txt
+
+# 2. Delete another existing file with different name
+curl -v -X DELETE http://localhost:8080/upload/readme.md
+
+# 3. Delete a non-existent file (should return 404)
+curl -v -X DELETE http://localhost:8080/upload/ghost.txt
+
+# 4. Delete a directory instead of a file (should return 403 or 409)
+curl -v -X DELETE http://localhost:8080/upload/
+
+# 5. Delete a file in a forbidden directory
+curl -v -X DELETE http://localhost:8080/private/secret.txt
+
+# 6. Delete a file outside the root (path traversal attempt)
+curl -v -X DELETE http://localhost:8080/../../etc/passwd
+
+# 7. Delete a file when DELETE is not allowed (location forbids it)
+curl -v -X DELETE http://localhost:8080/test.html
+
+# 8. Delete with query parameters (should still delete target file)
+curl -v -X DELETE "http://localhost:8080/upload/test.txt?foo=bar"
+
+# 9. Delete a CGI script (should return 403 or 405)
+curl -v -X DELETE http://localhost:8080/cgi-bin/time.py
+
+# 10. Delete with invalid path (malformed URI)
+curl -v -X DELETE "http://localhost:8080/upload/%ZZinvalid"

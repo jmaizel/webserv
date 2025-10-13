@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>404 – Page Not Found</title>
+  <style>
+    :root {
+      --bg1: #0f172a; /* slate-900 */
+      --bg2: #111827; /* gray-900 */
+      --accent: #60a5fa; /* blue-400 */
+      --text: #e5e7eb; /* gray-200 */
+    }
+    * { box-sizing: border-box }
+    html, body { height: 100% }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 70% 20%, #1e293b 0%, var(--bg1) 45%, var(--bg2) 100%);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .card {
+      width: min(720px, 92vw);
+      backdrop-filter: blur(8px);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 32px clamp(24px, 4vw, 48px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #a5b4fc; /* indigo-300 */
+    }
+    .eyebrow::before {
+      content: "";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #22d3ee; /* cyan-400 */
+      box-shadow: 0 0 16px #22d3ee;
+    }
+    h1 {
+      font-size: clamp(44px, 7vw, 92px);
+      line-height: 1;
+      margin: 10px 0 16px;
+      letter-spacing: -.02em;
+    }
+    p {
+      margin: 0 0 28px;
+      font-size: clamp(16px, 2.4vw, 20px);
+      color: #cbd5e1; /* slate-300 */
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .btn {
+      appearance: none;
+      border: 0;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      color: white;
+      box-shadow: 0 8px 24px rgba(59,130,246,.35);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Liberation Mono", "Courier New", monospace;
+      color: #93c5fd;
+    }
+    footer {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.7) 0, transparent 60%),
+        radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,.6) 0, transparent 60%),
+        radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,.5) 0, transparent 60%),
+        radial-gradient(1px 1px at 30% 80%, rgba(255,255,255,.7) 0, transparent 60%);
+      animation: twinkle 6s linear infinite;
+      opacity: .5;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: .35 }
+      50% { opacity: .7 }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" aria-hidden="true"></div>
+  <main class="card" role="main">
+    <span class="eyebrow">Error 404 • Not Found</span>
+    <h1>Lost in the void.</h1>
+    <p>The page you’re looking for drifted off-course or never existed. If you typed the URL, check the <span class="mono">/path</span>. Otherwise, try heading back home or exploring the sitemap.</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="/">← Back to Home</a>
+      <a class="btn btn-secondary" href="/sitemap">Open Sitemap</a>
+    </div>
+    <footer>Request ID: <span class="mono">#404-⭐︎</span></footer>
+  </main>
+</body>
+</html>

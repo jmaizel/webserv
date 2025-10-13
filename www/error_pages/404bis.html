@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>404 // File Not Found</title>
+  <style>
+    :root {
+      --bg: #0b0b0c;
+      --fg: #e6e6e6;
+      --muted: #9ca3af;
+      --accent: #22d3ee;
+      --danger: #f43f5e;
+      --shadow: rgba(0,0,0,.55);
+    }
+    * { box-sizing: border-box }
+    html, body { height: 100% }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
+      display: grid; place-items: center; padding: 24px;
+    }
+    .wrap {
+      width: min(900px, 94vw);
+      background: #0f1115;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px var(--shadow), inset 0 0 0 1px rgba(255,255,255,.03);
+      overflow: hidden;
+    }
+    .titlebar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; background: #111827; border-bottom: 1px solid #1f2937;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50% }
+    .dot.red { background: #f87171 }
+    .dot.yellow { background: #fbbf24 }
+    .dot.green { background: #34d399 }
+    .screen { padding: 24px; }
+    pre {
+      margin: 0 0 16px; white-space: pre-wrap; word-break: break-word;
+      text-shadow: 0 0 8px rgba(34,211,238,.15);
+    }
+    .glitch {
+      font-size: clamp(24px, 3vw, 28px);
+      letter-spacing: .06em;
+      display: inline-block;
+      animation: jitter 1.6s infinite;
+    }
+    @keyframes jitter {
+      0% { transform: translate(0,0) }
+      20% { transform: translate(0.6px,-0.4px) }
+      40% { transform: translate(-0.6px,0.6px) }
+      60% { transform: translate(0.5px,0.2px) }
+      80% { transform: translate(-0.4px,-0.6px) }
+      100% { transform: translate(0,0) }
+    }
+    .muted { color: var(--muted) }
+    .prompt { color: var(--accent) }
+    .error { color: var(--danger) }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px }
+    a.btn {
+      text-decoration: none; padding: 10px 14px; border-radius: 10px; border: 1px solid #374151;
+      background: #0b1220; color: var(--fg); box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+    }
+    input[type="text"]{
+      flex: 1 1 260px;
+      background: #0b1220; color: var(--fg); border: 1px solid #374151;
+      border-radius: 10px; padding: 10px 12px; outline: none;
+    }
+    footer { padding: 12px 14px; font-size: 12px; color: var(--muted); border-top: 1px solid #1f2937; background: #0f1115 }
+    kbd {
+      background: #111827; border: 1px solid #1f2937; border-bottom-color: #0b0f19;
+      padding: 2px 6px; border-radius: 6px; font-size: .9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main" aria-labelledby="h">
+    <div class="titlebar" aria-hidden="true">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+      <span style="margin-left:auto;color:#9ca3af">/usr/www → 404</span>
+    </div>
+    <div class="screen">
+<pre id="h"><span class="prompt">guest@web</span>:<span class="muted">~</span>$ <span class="glitch">cat /page/you/wanted</span>
+<span class="error">cat: /page/you/wanted: No such file or directory</span>
+
+   ___  ____   ___     ____   ___   _  _  
+  / _ \|___ \ / _ \   |___ \ / _ \ | || | 
+ | | | | __) | | | |    __) | | | || || |_ 
+ | | | ||__ <| | | |   |__ <| | | ||__   _|
+ | |_| |___) | |_| |   ___) | |_| |   | |  
+  \___/|____/ \___/   |____/ \___/    |_|  
+
+<span class="muted">HTTP/1.1 404 Not Found</span>
+<span class="muted">Server:</span> tiny-fox/1.0
+<span class="muted">Request-Id:</span> 0x404deadbeef
+</pre>
+
+      <div class="row" aria-label="actions">
+        <a class="btn" href="/">← Home</a>
+        <a class="btn" href="/search">Search</a>
+        <a class="btn" href="mailto:support@example.com?subject=Broken%20link%20on%20site">Report issue</a>
+        <input id="jump" type="text" placeholder="/jump/to/path (press Enter)" aria-label="Jump to path"/>
+      </div>
+    </div>
+    <footer>
+      Tip: press <kbd>/</kbd> to focus the jump bar. Press <kbd>Esc</kbd> to clear it.
+    </footer>
+  </div>
+
+  <script>
+    (function(){
+      const input = document.getElementById('jump');
+      function go(){
+        const v = (input.value || "").trim();
+        if (!v) return;
+        if (v.startsWith('http')) location.href = v;
+        else location.href = v.startsWith('/') ? v : '/' + v;
+      }
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') go();
+        if (e.key === 'Escape') input.value = '';
+      });
+      window.addEventListener('keydown', e => {
+        if (e.key === '/') {
+          e.preventDefault();
+          input.focus();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
