@@ -329,6 +329,7 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
 
     close(pipe_out[0]);
 
+    waitpid(pid, &status, 0);
     if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
         return generate_error_response(500, "Internal Server Error", "CGI execution failed", location);
 

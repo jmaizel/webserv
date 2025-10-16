@@ -536,6 +536,7 @@ void Server::handle_client_request(int client_fd)
         req.setBody(body);
     }
     //generate response
+    req.print();
     HttpResponse res = generate_response(req);
     std::string response = res.toStr();
 

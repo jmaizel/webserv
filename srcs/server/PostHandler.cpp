@@ -557,6 +557,8 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method", location);
 
     //check body size
+    std::cout << "BODY : " << req.getBody() << " SIZE : " <<  req.getBody().size() << std::endl;
+    location.print();
     if(req.getBody().size() > location.client_max_body_size)
         return generate_error_response(413, "Payload Too Large", "Body too large", location);
 
