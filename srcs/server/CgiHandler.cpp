@@ -167,7 +167,7 @@ HttpResponse ft_parse_cgi_headers(const std::string& headers_part, const std::st
 //fonction pour construire une réponse HTTP à partir de la sortie CGI
 HttpResponse ft_build_cgi_response(const std::string& cgi_output)
 {
-    std::cout << "CGI OUTPUT :\n"  << cgi_output << std::endl;
+
     size_t header_end = cgi_output.find("\r\n\r\n");
     if (header_end == std::string::npos)
         header_end = cgi_output.find("\n\n");
@@ -237,7 +237,7 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
     int pipe_in[2], pipe_out[2];
 
     if (pipe(pipe_in) == -1 || pipe(pipe_out) == -1)
-        return generate_error_response(403, "Forbidden", "Pipe failed", location);
+        return generate_error_response(500, "Internal Server Error", "Pipe failed", location);
 
     pid_t pid = fork();
     if (pid == -1)
@@ -246,7 +246,7 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
         close(pipe_in[1]);
         close(pipe_out[0]); 
         close(pipe_out[1]);
-        return generate_error_response(403, "Forbidden", "Fork failed", location);
+        return generate_error_response(500, "Internal Server Error", "Fork failed", location);    
     }
 
     if (pid == 0)
@@ -261,7 +261,12 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
     //si POST, écrire le body dans le pipe
     if (request.getMethod() == "POST" && !request.getBody().empty())
     {
-        write(pipe_in[1], request.getBody().c_str(), request.getBody().length());
+        ssize_t bytes = write(pipe_in[1], request.getBody().c_str(), request.getBody().length());
+        if (bytes < 0)
+        {
+            close(pipe_in[1]);
+            return generate_error_response(500, "Internal Server Error", "Failed to send POST arguments", location);
+        }
     }
     close(pipe_in[1]);
 
@@ -269,20 +274,64 @@ HttpResponse Server::generate_cgi_response(const std::string& script_path, const
     char buffer[4096];
     ssize_t bytes_read;
 
-    while ((bytes_read = read(pipe_out[0], buffer, sizeof(buffer) - 1)) > 0)
+
+    int status;
+    time_t begin = std::time(NULL);
+
+    int flags = fcntl(pipe_out[0], F_GETFL, 0);
+    if (flags == -1)
+        perror("fcntl get");
+    if (fcntl(pipe_out[0], F_SETFL, flags | O_NONBLOCK) == -1)
+        perror("fcntl set");
+
+
+    while (true)
     {
-        buffer[bytes_read] = '\0';
-        cgi_output += buffer;
+        //read whatever the CGI wrote so far
+        bytes_read = read(pipe_out[0], buffer, sizeof(buffer) - 1);
+        if (bytes_read > 0)
+        {
+            buffer[bytes_read] = '\0';
+            cgi_output.append(buffer, bytes_read);
+        }
+        //if child closed stdout
+        else if (bytes_read == 0)
+        {
+            break;
+        }
+
+        //has the child exited?
+        //wnohang doesnt block!
+        pid_t res = waitpid(pid, &status, WNOHANG);
+
+        //if child finished break
+        if (res == pid)
+            break; //child finished
+
+        if (res == -1)
+        {
+            kill(pid, SIGKILL);
+            waitpid(pid, NULL, 0);
+            return generate_error_response(500, "Internal Server Error", "CGI execution failed", location);
+        }
+
+        //timeout check
+        time_t now = std::time(NULL);
+        if (now - begin >= CGI_TIMEOUT)
+        {
+            kill(pid, SIGKILL);
+            waitpid(pid, NULL, 0);
+            close(pipe_out[0]);
+            return generate_error_response(504, "Gateway Timeout", "CGI execution exceeded time limit", location);
+        }
+        usleep(100000); // 0.1s
     }
 
     close(pipe_out[0]);
 
-    int status;
     waitpid(pid, &status, 0);
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+        return generate_error_response(500, "Internal Server Error", "CGI execution failed", location);
 
-    if (WEXITSTATUS(status) != 0)
-        return generate_error_response(403, "Forbidden", "CGI execution failed", location);
-
-    //NO ADD LOCATION
     return ft_build_cgi_response(cgi_output);
 }

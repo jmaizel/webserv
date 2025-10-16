@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Discover</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #07000b;        /* near-black with faint purple hue */
+      --fg: #e9e6ff;
+      --panel: rgba(255, 255, 255, 0.04);
+      --btn: #6a27a3;
+      --btn-hover: #8b40d0;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      text-align: center;
+      padding: 8rem 4rem;
+      border-radius: 36px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+      width: 90vw;
+      height: 80vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    h1 {
+      margin: 0 0 3rem;
+      font-size: 3.5rem;
+      letter-spacing: 2px;
+    }
+
+    .btn {
+      display: block;
+      width: 80%;              
+      max-width: 600px;        
+      margin: 0.8rem auto;
+      padding: 1rem 0;         
+      border: none;
+      border-radius: 12px;     
+      background: var(--btn);
+      color: white;
+      font-weight: 700;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn:hover { background: var(--btn-hover); transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Discover</h1>
+
+    <!-- GET button -->
+    <form method="GET" action="get.html">
+      <button type="submit" class="btn">GET</button>
+    </form>
+
+    <!-- DELETE button -->
+    <form method="GET" action="delete.html">
+      <button type="submit" class="btn">DELETE</button>
+    </form>
+
+    <!-- POST button -->
+    <form method="GET" action="post.html">
+      <button type="submit" class="btn">POST</button>
+    </form>
+
+    <!-- CGI button -->
+    <form method="GET" action="cgi.html">
+      <button type="submit" class="btn">CGI</button>
+    </form>
+  </main>
+</body>
+</html>

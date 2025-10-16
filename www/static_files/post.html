@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>POST Request Tester</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #07000b;
+      --fg: #e9e6ff;
+      --panel: rgba(255,255,255,0.04);
+      --btn: #6a27a3;
+      --btn-hover: #8b40d0;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .window {
+      text-align: center;
+      padding: 5rem 3rem;
+      border-radius: 36px;
+      background: var(--panel);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      width: 90vw;
+      height: 80vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      overflow-y: auto;
+    }
+
+    h1 {
+      font-size: 3.5rem;
+      margin-bottom: 2rem;
+    }
+
+    input[type="text"], input[type="file"], textarea {
+      width: 70%;
+      max-width: 600px;
+      padding: 1rem 1.2rem;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 12px;
+      outline: none;
+      margin-bottom: 2rem;
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    textarea {
+      height: 100px;
+      resize: vertical;
+    }
+
+    .section {
+      margin: 2.5rem 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 1.5rem 3rem;
+      width: 60%;
+      max-width: 500px;
+      border: none;
+      border-radius: 16px;
+      background: var(--btn);
+      color: white;
+      font-size: 1.4rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn:hover { background: var(--btn-hover); transform: translateY(-3px); }
+    .btn:active { transform: translateY(0); }
+
+    a {
+      display: block;
+      margin-top: 3rem;
+      color: var(--fg);
+      text-decoration: none;
+      opacity: 0.8;
+      font-weight: 500;
+    }
+
+    a:hover { opacity: 1; text-decoration: underline; }
+
+    hr {
+      width: 80%;
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      margin: 2.5rem 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <h1>POST Tester</h1>
+
+    <!-- Target path input -->
+    <input type="text" id="target" placeholder="Type the target path (e.g. /upload/test)" required />
+
+    <!-- URL-encoded Form -->
+    <section class="section">
+      <h2>Regular Form (URL-encoded)</h2>
+      <form method="POST" onsubmit="return setAction(this);">
+        <input type="text" name="message" placeholder="Enter text..." />
+        <button type="submit" class="btn">Send URL-encoded POST</button>
+      </form>
+    </section>
+
+    <hr />
+
+    <!-- Multipart Form -->
+    <section class="section">
+      <h2>Multipart Form (File Upload)</h2>
+      <form method="POST" enctype="multipart/form-data" onsubmit="return setAction(this);">
+        <input type="file" name="file" />
+        <button type="submit" class="btn">Send Multipart POST</button>
+      </form>
+    </section>
+
+    <hr />
+
+    <!-- JSON-like Form (simulated as text/plain) -->
+    <section class="section">
+      <h2>JSON POST (simulate)</h2>
+      <form method="POST" enctype="text/plain" onsubmit="return setAction(this);">
+        <textarea name="jsonBody" placeholder='{"key": "value"}'></textarea>
+        <button type="submit" class="btn">Send JSON-like POST</button>
+      </form>
+    </section>
+
+    <hr />
+
+    <!-- Plain Text Form -->
+    <section class="section">
+      <h2>Plain Text POST</h2>
+      <form method="POST" enctype="text/plain" onsubmit="return setAction(this);">
+        <textarea name="plainBody" placeholder="Type plain text body here..."></textarea>
+        <button type="submit" class="btn">Send Plain Text POST</button>
+      </form>
+    </section>
+
+    <a href="discover.html">← Back to Discover</a>
+  </main>
+
+  <script>
+    // Dynamically set form target before submission
+    function setAction(form) {
+      const target = document.getElementById('target').value.trim();
+      if (!target) {
+        alert('Please specify a target path first.');
+        return false;
+      }
+      form.action = target;
+      return true;
+    }
+  </script>
+</body>
+</html>

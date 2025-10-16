@@ -133,14 +133,26 @@ HttpResponse Server::handle_json(const std::string &body, const std::string &pat
 
         int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0)
-            return generate_error_response(500, " Internel Server Error", "File exists but read failed", location);
+            return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
 
         //if there is content write it
         it = sorted_body.find("content");
         if (it != sorted_body.end())
-            write(fd, (it->second).c_str(), (it->second).size());
+        {
+            ssize_t bytes = write(fd, (it->second).c_str(), (it->second).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
+        }
         close(fd);
-        return generate_success_response(201, "OK", "File uploaded successfully");
+        return generate_success_response(201, "Created", "File uploaded successfully");
     }
 
     //random data
@@ -155,9 +167,19 @@ HttpResponse Server::handle_json(const std::string &body, const std::string &pat
         int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0)
             return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
-        write(fd, (body).c_str(), (body).size());
+        ssize_t bytes = write(fd, (body).c_str(), (body).size());
+        if (bytes < 0)
+        {
+            close(fd);
+            return generate_error_response(500, "Internel Server Error", "write failed", location);
+        }
+        else if (bytes == 0)
+        {
+            close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");
+        }
         close(fd);
-            return generate_success_response(201, "Created", "File uploaded successfully");;
+        return generate_success_response(201, "Created", "File uploaded successfully");;
     }
     return generate_success_response(200, "OK", "Data processed successfully");
 }
@@ -260,7 +282,6 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
         std::string content = body.substr(content_start, next_boundary - content_start);
 
         //parse Content-Disposition
-        std::cout << "HERE : " << content << std::endl;
         size_t cd_pos = headers.find("Content-Disposition:");
         if (cd_pos == std::string::npos)
             continue;
@@ -290,7 +311,17 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
             int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0)
                 return generate_error_response(500, "Internel Server Error", "Read failed", location);
-            write(fd, (content).c_str(), (content).size());
+            ssize_t bytes = write(fd, (content).c_str(), (content).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
             close(fd);
             files_created++;
         }
@@ -307,7 +338,17 @@ HttpResponse Server::handle_multipart(const std::string &body, const std::string
             int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
             if (fd < 0)
                 return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
-            write(fd, (content).c_str(), (content).size());
+            ssize_t bytes = write(fd, (content).c_str(), (content).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
             close(fd);
             return generate_success_response(201, "Created", "File uploaded successfully");;
         }
@@ -352,7 +393,19 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
         //if there is content write it
         it = sorted_body.find("content");
         if (it != sorted_body.end())
-            write(fd, (it->second).c_str(), (it->second).size());
+        {
+            ssize_t bytes = write(fd, (it->second).c_str(), (it->second).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
+        }
         close(fd);
 
         return generate_success_response(200, "OK", "File overwrite successfull");
@@ -374,7 +427,19 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
         //if there is content write it
         it = sorted_body.find("content");
         if (it != sorted_body.end())
-            write(fd, (it->second).c_str(), (it->second).size());
+        {
+            ssize_t bytes = write(fd, (it->second).c_str(), (it->second).size());
+            if (bytes < 0)
+            {
+                close(fd);
+                return generate_error_response(500, "Internel Server Error", "write failed", location);
+            }
+            else if (bytes == 0)
+            {
+                close(fd);
+                return generate_success_response(201, "Created", "File uploaded successfully");
+            }
+        }
         close(fd);
 
         return generate_success_response(201, "Created", "File uploaded successfully");
@@ -392,9 +457,18 @@ HttpResponse Server::handle_url_encoded(const std::string &body, const std::stri
         int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd < 0)
             return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
-        write(fd, (body).c_str(), (body).size());
+        ssize_t bytes = write(fd, (body).c_str(), (body).size());
+        if (bytes < 0)
+        {
+            close(fd);
+            return generate_error_response(500, "Internel Server Error", "write failed", location);
+        }
+        else if (bytes == 0)
+        {
+            close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");
+        }
         close(fd);
-
         return generate_success_response(201, "Created", "File uploaded successfully");
     }
     return generate_success_response(200, "OK", "Data proccessed successfully");
@@ -422,7 +496,19 @@ HttpResponse    Server::handle_file_response(const std::string &path, LocationBl
 
     //write body content if any
     if (!body.empty())
-        write(fd, body.c_str(), body.size());
+    {
+        ssize_t bytes = write(fd, body.c_str(), body.size());
+        if (bytes < 0)
+        {
+            close(fd);
+            return generate_error_response(500, "Internel Server Error", "write failed", location);
+        }
+        else if (bytes == 0)
+        {
+            close(fd);
+            return generate_success_response(201, "Created", "File uploaded successfully");
+        }
+    }
 
     close(fd);
 
@@ -444,7 +530,17 @@ HttpResponse    Server::handle_generic_type(const std::string &body, const std::
     int fd = open((file_path).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0)
         return generate_error_response(500, "Internel Server Error", "Read failed", location);
-    write(fd, (body).c_str(), (body).size());
+    ssize_t bytes = write(fd, (body).c_str(), (body).size());
+    if (bytes < 0)
+    {
+        close(fd);
+        return generate_error_response(500, "Internel Server Error", "write failed", location);
+    }
+    else if (bytes == 0)
+    {
+        close(fd);
+        return generate_success_response(201, "Created", "File uploaded successfully");
+    }
     close(fd);
 
     return generate_success_response(201, "Created", "File uploaded successfully");
@@ -456,22 +552,37 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
 
     std::string target = req.getTarget();
 
-    std::cout << "Post method called for target : " << target << std::endl;
-
-    std::cout << "Location matched to : " << location.path << std::endl;
-    location.print();
-
     //check if POST is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "POST") == location.allowed_methods.end())
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve POST method", location);
 
     //check body size
+    std::cout << "BODY : " << req.getBody() << " SIZE : " <<  req.getBody().size() << std::endl;
+    location.print();
     if(req.getBody().size() > location.client_max_body_size)
         return generate_error_response(413, "Payload Too Large", "Body too large", location);
 
+    std::string path = get_ressource_path(target, location);
+    //check if it is CGI
+    size_t dot = path.rfind('.');
+    if (dot != std::string::npos)
+    {
+        //construct the file extension
+        std::string ext = path.substr(dot);
+
+        //check in location.cgi_extension
+        for (size_t i = 0; i < location.cgi_extension.size(); ++i)
+        {
+            if (ext == location.cgi_extension[i])
+            {
+                //file should be executed as CGI
+                return generate_cgi_response(path, req, location);
+            }
+        }
+    }
+
     //construct the path of the ressource based on the root and upload path
-    std::string path = get_POST_ressource_path(target, location);
-    std::cout << "Contructed ressource path: " << path << std::endl;
+    path = get_POST_ressource_path(target, location);
 
     //Check existence of the target
     struct stat st;
@@ -546,24 +657,6 @@ HttpResponse    Server::generate_post_response(HttpRequest &req, LocationBloc &l
         else
         {
             return (handle_generic_type(req.getBody(), path, location));
-        }
-    }
-
-    //check if it is CGI
-    size_t dot = path.rfind('.');
-    if (dot != std::string::npos)
-    {
-        //construct the file extension
-        std::string ext = path.substr(dot);
-
-        //check in location.cgi_extension
-        for (size_t i = 0; i < location.cgi_extension.size(); ++i)
-        {
-            if (ext == location.cgi_extension[i])
-            {
-                //file should be executed as CGI
-                return generate_cgi_response(path, req, location);
-            }
         }
     }
 

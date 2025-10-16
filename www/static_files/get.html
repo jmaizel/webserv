@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>GET Request</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #07000b;
+      --fg: #e9e6ff;
+      --panel: rgba(255,255,255,0.04);
+      --btn: #6a27a3;
+      --btn-hover: #8b40d0;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .window {
+      text-align: center;
+      padding: 6rem 3rem;
+      border-radius: 36px;
+      background: var(--panel);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      width: 80vw;
+      height: 70vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 2rem;
+    }
+
+    input[type="text"] {
+      width: 70%;
+      max-width: 500px;
+      padding: 0.9rem 1rem;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 12px;
+      outline: none;
+      margin-bottom: 2rem;
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+      color: var(--fg);
+    }
+
+    .btn {
+      padding: 0.7rem 2rem;      /* shorter height */
+      width: 40%;
+      max-width: 250px;
+      margin: 0 auto;
+      border: none;
+      border-radius: 10px;
+      background: var(--btn);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .btn:hover { background: var(--btn-hover); transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+
+    a {
+      display: block;
+      margin-top: 3rem;
+      color: var(--fg);
+      text-decoration: none;
+      opacity: 0.8;
+      font-weight: 500;
+    }
+
+    a:hover { opacity: 1; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="window">
+    <h1>GET a File</h1>
+
+    <!-- Simple form to type a filename -->
+    <form method="GET" id="getForm" onsubmit="return goToFile();">
+      <input type="text" id="filename" name="filename" placeholder="Type a file name (e.g. test.html)" required />
+      <button type="submit" class="btn">GET</button>
+    </form>
+
+    <a href="discover.html">← Back to Discover</a>
+  </main>
+
+  <script>
+    function goToFile() {
+      const file = document.getElementById('filename').value.trim();
+      if (!file) return false;
+      window.location.href = file; // triggers GET request to that file
+      return false; // prevent form reload
+    }
+  </script>
+</body>
+</html>

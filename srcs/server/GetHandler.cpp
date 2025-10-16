@@ -49,12 +49,13 @@ std::string generate_autoindex_string(const std::string &path, const std::string
 
         if (stat(fullpath.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
         {
-            //if directory
-            stream << "<li><a href=\"" << href << "/\">" << name << "/</a></li>\n";
-        } else
+            //if directory, just show the name with a trailing slash
+            stream << "<li>" << name << "/</li>\n";
+        }
+        else
         {
-            //if file
-            stream << "<li><a href=\"" << href << "\">" << name << "</a></li>\n";
+            //if file, just show the name
+            stream << "<li>" << name << "</li>\n";
         }
     }
     closedir(dir);
@@ -135,18 +136,12 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
 
     std::string target = req.getTarget();
 
-    std::cout << "GET method called for target : " << target << std::endl;
-
-    std::cout << "Location matched to : " << location.path << std::endl;
-    location.print();
-
     //check if GET is an accepted method in the location
     if(std::find(location.allowed_methods.begin(), location.allowed_methods.end(), "GET") == location.allowed_methods.end())
         return generate_error_response(405, "Method Not Allowed", "Requested location doesn't serve GET method", location);
     
     //construct the path of the location based on the root
     std::string path = get_ressource_path(target, location);
-    std::cout << "Contructed ressource path: " << path << std::endl;
 
     //Check existence of the ressource path
     struct stat st;
@@ -210,10 +205,8 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
         //check in location.cgi_extension
         for (size_t i = 0; i < location.cgi_extension.size(); ++i)
         {
-            std::cout << ext << std::endl;
             if (ext == location.cgi_extension[i])
             {
-                std::cout << "CGI ACTIVATED" << std::endl;
                 //file should be executed as CGI
                 return generate_cgi_response(path, req, location);
             }
@@ -223,7 +216,7 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0)
     {
-        return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
+        return generate_error_response(500, "Internel Server Error", "File exists but open failed", location);
     }
 
     std::string body;
@@ -232,6 +225,12 @@ HttpResponse Server::generate_get_response(HttpRequest &req, LocationBloc &locat
     while ((n = read(fd, buf, sizeof(buf))) > 0)
     {
         body.append(buf, n);
+    }
+    if (n < 0)
+    {
+        close(fd);
+        return generate_error_response(500, "Internel Server Error", "File exists but read failed", location);
+
     }
     close(fd);
 

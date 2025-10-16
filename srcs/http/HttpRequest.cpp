@@ -167,16 +167,27 @@ bool    HttpRequest::is_valid_headers()const
     if (_target[0] != '/')
         throw std::runtime_error("Invalid request target");
     //HTTP version
-    if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
-        throw std::runtime_error("HTTP Version Not Supported");
+    if (_version.compare(0, 5, "HTTP/") != 0)
+        throw std::runtime_error("Malformed HTTP Version");
+    std::string number = _version.substr(5);
+    std::string::size_type dot = number.find('.');
+    //should have a dot
+    if (dot == std::string::npos)
+        throw std::runtime_error("Malformed HTTP Supported");
+    std::string major_str = number.substr(0, dot);
+    std::string minor_str = number.substr(dot + 1);
+    //must not be empty
+    if (major_str.empty() || minor_str.empty())
+         throw std::runtime_error("Malformed HTTP Supported");
 
-    //host header required in HTTP/1.1
-    if (_version == "HTTP/1.1")
-    {
-        std::map<std::string, std::string>::const_iterator it = _headers.find("Host");
-        if (it == _headers.end() || it->second.empty())
-            throw std::runtime_error("400 Host header required in HTTP/1.1");
-    }
+    //must contain only digits
+    for (size_t i = 0; i < major_str.size(); i++)
+        if (!std::isdigit(major_str[i]))
+            throw std::runtime_error("Malformed HTTP Supported");
+
+    for (size_t i = 0; i < minor_str.size(); i++)
+        if (!std::isdigit(minor_str[i]))
+            throw std::runtime_error("Malformed HTTP Supported");
 
     //Content-Length check
     std::map<std::string, std::string>::const_iterator it = _headers.find("Content-Length");

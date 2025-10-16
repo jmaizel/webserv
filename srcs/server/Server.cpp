@@ -221,16 +221,26 @@ void Server::accept_new_client(void)
         close(client_fd);
         return;
     }
+    if (client_fd > _max_fd)
+        _max_fd = client_fd;
 
-    if (_client_fds.size() >= MAX_CLIENTS)
+    if (_max_fd >= FD_SETSIZE || _client_fds.size() >= MAX_CLIENTS)
     {
-        //TODO add the default page if exist!
         std::string res =
             "HTTP/1.1 503 Service Unavailable\r\n"
             "Connection: close\r\n"
             "Content-Length: 0\r\n"
             "\r\n";
-        send(client_fd, res.c_str(), res.size(), 0);
+        ssize_t bytes = send(client_fd, res.c_str(), res.size(), 0);
+        if (bytes < 0)
+        {
+            disconnect_client(client_fd);
+            return ;
+        }
+        if (bytes == 0)
+        {
+            return ;
+        }
         close(client_fd);
         std::cout << "Refused client (server full) on " << _name << std::endl;
         return;
@@ -242,9 +252,6 @@ void Server::accept_new_client(void)
     _client_buffers[client_fd] = std::string("");
     _clients_timeout[client_fd] = time(NULL);
     
-    if (client_fd > _max_fd)
-        _max_fd = client_fd;
-
     std::cout << "New client id=" << client_fd << " connected to server " << _name << std::endl;
 }
 
@@ -256,16 +263,18 @@ HttpResponse    Server::generate_response(HttpRequest &req)
     std::string     method = req.getMethod();
     //get the target of the request
     std::string     target = req.getTarget();
+    //get the http version
+     std::string    version = req.getVersion();
     //get the corresponding location of the request (there is always one, the default server root
     std::map<std::string, LocationBloc>::iterator   it = find_best_location(target);
     LocationBloc location = it->second;
 
-    if (req.getFlag() == 400)
-    {
-        res =  res = generate_error_response(400, "Bad Request", "The browser sent a request that this server could not understand", location);
-    }
+    if (version != "HTTP/1.1" && version != "HTTP/1.0")
+        return generate_error_response(505, "HTTP Version Not Supported", "This HTTP version is not supported by the server", location);
+    if (target.size() > 8192)
+        return generate_error_response(414, "URI too long", "Requested URI is too long", location);
     //check if there are no redirects in the server -> redirect directly
-    if (this->_redirect.size() > 1)
+    else if (this->_redirect.size() > 1)
         return generate_redirect_response(this->_redirect, location);
 
     //check if there are no redirects in the location -> redirect directly
@@ -329,7 +338,17 @@ void    Server::generate_error_response_special(int client_fd, int code, const s
     default_location_it = this->_locations.find("/");
     location = default_location_it->second;
     res = generate_error_response(code, raison, details, location);
-    send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    ssize_t bytes = send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    if (bytes < 0)
+    {
+        disconnect_client(client_fd);
+        return ;
+    }
+    if (bytes == 0)
+    {
+        return ;
+
+    }
 }
 
 std::string decode_chunked(std::string &raw)
@@ -406,7 +425,6 @@ void Server::handle_client_request(int client_fd)
         return;
     }
 
-    //non blocking mode (recv blocks normally)
     else if (n < 0)
     {
             disconnect_client(client_fd);
@@ -420,7 +438,6 @@ void Server::handle_client_request(int client_fd)
         if (client_buffer.find("\r\n\r\n") == std::string::npos)
         {
             client_buffer.append(buffer, n);
-            std::cout << "Client: " << client_fd << ": Constructed Headers: " << client_buffer << std::endl;
             //if we still don't have it send it back to select
             if (client_buffer.find("\r\n\r\n") == std::string::npos)
                 return;
@@ -433,8 +450,6 @@ void Server::handle_client_request(int client_fd)
                 disconnect_client(client_fd);
                 return ;
             }
-            std::cout << "Headers Received :\n" << std::endl;
-            req.print();
             reset_timeout(client_fd);
             //right when you get the headers clear the buffer
             n = 0;
@@ -446,7 +461,6 @@ void Server::handle_client_request(int client_fd)
         //do we have all the body (Content-Lenght)
         if (req.getMethod() == "POST")
         {
-            std::cout << "Entering POST" << std::endl;
             //get content-length
             std::map<std::string, std::string> headers = req.getHeaders();
             std::map<std::string, std::string>::iterator ith = headers.find("Content-Length");
@@ -489,7 +503,6 @@ void Server::handle_client_request(int client_fd)
             //if the body headers is messed up
             else
             {
-                std::cout << "hello" << std::endl;
                 generate_error_response_special(client_fd, 400, "Bad Request", "Unkown POST directive");
                 disconnect_client(client_fd);
                 return;
@@ -522,13 +535,16 @@ void Server::handle_client_request(int client_fd)
         }
         req.setBody(body);
     }
-    req.print();
     //generate response
+    req.print();
     HttpResponse res = generate_response(req);
     std::string response = res.toStr();
 
     //decide keep-alive or close
-    bool keep_alive = true; // default for HTTP/1.1
+    bool keep_alive = false; // default for HTTP/1.1
+
+    if (req.getVersion() == "HTTP/1.1")
+        keep_alive = true;
 
     std::map<std::string, std::string> headers = req.getHeaders();
     std::map<std::string, std::string>::iterator ith = headers.find("Connection");
@@ -546,8 +562,17 @@ void Server::handle_client_request(int client_fd)
         res.setHeaders("Connection", "close");
 
     //send response to client
-    send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    ssize_t bytes = send(client_fd, res.toStr().c_str(), res.toStr().size(), MSG_NOSIGNAL);
+    if (bytes < 0)
+    {
+        disconnect_client(client_fd);
+        return ;
+    }
+    if (bytes == 0)
+    {
+        return ;
 
+    }
     if (keep_alive)
     {
         //reset the timeout
